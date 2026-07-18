@@ -2,45 +2,307 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>相機開啟測試</title>
-    <!-- 引入核心相機工具 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>玻纖紙裁切生產看板-終極版</title>
+    <!-- 引入免費開源的相機掃描套件 -->
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f0f2f5; }
-        /* 測試按鈕樣式 */
-        .btn-test { font-size: 24px; font-weight: bold; padding: 20px 40px; background-color: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; }
-        /* 相機畫面外框 */
-        #camera-preview { width: 100%; max-width: 320px; margin: 20px auto; border: 3px solid #007bff; border-radius: 10px; overflow: hidden; background: black; }
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; }
+        h2 { text-align: center; color: #333; margin: 5px 0; }
+        .card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 12px; }
+        .title { font-size: 15px; color: #666; font-weight: bold; }
+        .value { font-size: 34px; font-weight: bold; color: #222; margin: 3px 0; text-align: right; }
+        .unit { font-size: 16px; color: #666; }
+        
+        /* 四種防錯狀態邊框顏色變換 */
+        .normal { border-left: 8px solid #007bff; }
+        .success { border-left: 8px solid #28a745; background-color: #e8f5e9; }
+        .warning { border-left: 8px solid #ff9800; background-color: #fff3cd; } 
+        .finish { border-left: 8px solid #dc3545; background-color: #ffebee; }
+        .ng-card { border-left: 8px solid #6c757d; background-color: #f8f9fa; } 
+
+        /* 相機彈出視窗與 NG 輸入彈出視窗的遮罩樣式 */
+        #camera-modal, #ng-input-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        #reader, .ng-input-box { width: 85%; max-width: 320px; border-radius: 10px; overflow: hidden; background: white; padding: 20px; box-sizing: border-box; }
+        .modal-title { color: white; font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
+        .btn-close-camera, .btn-modal-action { font-size: 16px; padding: 10px 25px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-close-camera { background: #dc3545; color: white; }
+        
+        .ng-input-box h3 { margin-top: 0; text-align: center; color: #333; }
+        .ng-input-box input { width: 100%; font-size: 28px; padding: 10px; text-align: center; border: 2px solid #6c757d; border-radius: 5px; margin: 15px 0; box-sizing: border-box; }
+        .ng-btn-group { display: flex; gap: 10px; }
+        
+        /* 產線專用超大點擊觸發掃碼按鈕 */
+        .cut-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .btn-scan-action { font-size: 20px; font-weight: bold; padding: 18px 5px; border: none; border-radius: 12px; color: white; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.15); text-align: center; }
+        .btn-large { background-color: #ff5722; } 
+        .btn-small { background-color: #009688; } 
+        .btn-ng { background-color: #6c757d; grid-column: span 2; padding: 12px 5px; font-size: 18px; } 
+        .btn-scan-action:active { opacity: 0.8; transform: scale(0.98); }
+        
+        .btn-scan-order { width: 100%; font-size: 18px; padding: 10px; background-color: #4caf50; color: white; border: none; border-radius: 5px; font-weight: bold; margin-bottom: 5px; }
+        .btn-group { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-sub { flex: 1; font-size: 14px; padding: 8px; background-color: #6c757d; color: white; border: none; border-radius: 5px; }
+        .sync-status { text-align: center; font-size: 14px; color: #007bff; font-weight: bold; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <h2>📷 最簡相機開啟功能測試</h2>
-    <p>請點擊下方綠色按鈕觸發相機權限：</p>
+    <h2>✂️ 玻纖紙裁切生產看板 (終極智慧版)</h2>
 
-    <!-- 點擊觸發開相機的按鈕 -->
-    <button class="btn-test" onclick="openTestCamera()">【點我打開相機】</button>
+    <!-- 1. 開工規格載入區 -->
+    <div class="card" style="background: #e9ecef; border: 2px solid #4caf50;">
+        <button class="btn-scan-order" onclick="openCamera('order')">📷 第一步：掃描工單 QR Code 開工</button>
+        <div class="title" style="margin-top: 5px;">📋 當前工單設定規格：</div>
+        <div class="info-grid">
+            <div class="info-box">品項：<span id="lbl-item" class="highlight">尚未載入</span></div>
+            <div class="info-box">單卷目標：<span id="lbl-tgt-roll" class="highlight">0</span> cm</div>
+            <div class="info-box">大張規格：<span id="lbl-spec-l" class="highlight">0.00</span> cm</div>
+            <div class="info-box">小張規格：<span id="lbl-spec-s" class="highlight">0.00</span> cm</div>
+        </div>
+        <div style="font-size: 13px; text-align: center; margin-top: 5px; color: #666;">
+            工單總目標：<span id="lbl-tgt-order" style="font-weight:bold; color:#dc3545;">0</span> cm
+        </div>
+    </div>
 
-    <!-- 相機畫面呈現的區塊 -->
-    <div id="camera-preview"></div>
+    <!-- 2. 當前原紙卷生產數據看板 -->
+    <div class="card normal">
+        <div class="title">📊 【當前單卷】良品裁切張數</div>
+        <div class="value">大: <span id="v-l-cnt">0</span> ｜ 小: <span id="v-s-cnt">0</span></div>
+    </div>
+
+    <div class="card ng-card">
+        <div class="title" style="color: #6c757d;">⚠️ 【當前單卷】NG 累計報廢量</div>
+        <div class="value" style="color: #6c757d;"><span id="v-ng-cnt">0</span> 張 ｜ <span id="v-ng-cm">0.00</span> <span class="unit" style="color: #6c757d;">cm</span></div>
+    </div>
+
+    <div id="card-roll" class="card normal">
+        <div class="title" id="title-roll">🌀 當前【單卷】原紙消耗進度</div>
+        <div class="value"><span id="view-roll">0.00</span> / <span id="lbl-show-roll">0</span> <span class="unit">cm</span></div>
+    </div>
+
+    <!-- 3. 工單總累積進度看板 (多人跨日、跨多卷同步) -->
+    <div id="card-order" class="card normal" style="border: 2px solid #007bff;">
+        <div class="title" style="color:#007bff;">📋 雲端【工單歷史總累計】(僅計良品)</div>
+        <div class="value" style="color:#007bff;"><span id="view-order">0.00</span> / <span id="lbl-show-order">0</span> <span class="unit" style="color:#007bff;">cm</span></div>
+    </div>
+
+    <!-- 4. 產線掃碼操作按鈕區 -->
+    <div class="card" style="border: 2px dashed #007bff; background: #f8f9fa;">
+        <div class="title">🔘 第二步：產線動作掃碼 (依目前原紙與工單自動比對)</div>
+        <div class="cut-buttons">
+            <button class="btn-scan-action btn-large" onclick="openCamera('large')">📐 大張掃碼<br>+1</button>
+            <button class="btn-scan-action btn-small" onclick="openCamera('small')">📏 小張掃碼<br>+1</button>
+            <button class="btn-scan-action btn-ng" onclick="openCamera('ng')">⚠️ 切壞/試機 NG 掃碼輸入公分</button>
+        </div>
+        <div id="sync-msg" class="sync-status">🟡 請先掃描工單 QR Code 開始作業...</div>
+        
+        <div class="btn-group">
+            <!-- 當換下一卷原紙時點擊，只重置單卷計數，鎖定並保留下方工單總進度 -->
+            <button class="btn-sub" onclick="forceNextRoll()" style="background-color: #ff9800; font-weight:bold;">🌀 換下一卷原紙 (單卷歸零)</button>
+            <button class="btn-sub" onclick="resetAll()">🔄 全部清空</button>
+        </div>
+    </div>
+
+    <!-- 📷 隱藏的相機彈出畫面 -->
+    <div id="camera-modal">
+        <div id="modal-title-text" class="modal-title">請對準條碼</div>
+        <div id="reader"></div>
+        <button class="btn-close-camera" onclick="closeCamera()">❌ 關閉相機</button>
+    </div>
+
+    <!-- ⌨️ 隱藏的 NG 公分數手動輸入視窗 -->
+    <div id="ng-input-modal">
+        <div class="ng-input-box">
+            <h3>⚠️ 輸入 NG 報廢公分數</h3>
+            <p style="font-size:14px; color:#666; text-align:center; margin:0;">請測量並輸入這張廢料的實際長度</p>
+            <input type="number" id="ng-cm-field" placeholder="0.0" inputmode="decimal">
+            <div class="ng-btn-group">
+                <button class="btn-modal-action" onclick="submitNgCm()" style="background:#6c757d; color:white; flex:2;">確認送出</button>
+                <button class="btn-modal-action" onclick="closeNgModal()" style="background:#e0e0e0; color:#333; flex:1;">取消</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        function openTestCamera() {
-            // 1. 初始化掃描器物件，綁定到畫面的 camera-preview 區塊
-            const html5QrcodeScanner = new Html5QrcodeScanner("camera-preview", { fps: 10, qrbox: 200 });
+        // 工單核心配置參數
+        let config = { item: '', targetRoll: 0, targetOrder: 0, largeCm: 0, smallCm: 0 };
+        
+        // 單卷統計變數 (每換一卷原紙可手動清空)
+        let rollLargeCount = 0; let rollSmallCount = 0;
+        let rollNgCount = 0; let rollNgCm = 0.0;
+        let currentRollCm = 0.0; // 僅記錄當前單卷的良品公分
+        
+        // 雲端總累積變數 (跨日跨多卷跨手機)
+        let totalOrderCm = 0.0; 
+        let completedRolls = 0;
+        let currentScanMode = ""; 
+        let html5QrcodeScanner = null;
+
+        // ⚠️ 核心設定：請在此處填入您在 Google 雲端部署後取得的 Apps Script 網址
+        const gasUrl = "https://google.com"; 
+
+        function openCamera(mode) {
+            if (mode !== 'order' && !config.item) { alert("⚠️ 錯誤：請先掃描工單 QR Code 載入開工規格！"); return; }
+            currentScanMode = mode;
+            let modal = document.getElementById("camera-modal");
+            let titleText = document.getElementById("modal-title-text");
+            if (mode === 'order') titleText.innerText = "請掃描【工單二維碼】設定規格";
+            if (mode === 'large') titleText.innerText = "📐 請對準掃描【大張條碼】";
+            if (mode === 'small') titleText.innerText = "📏 請對準掃描【小張條碼】";
+            if (mode === 'ng') titleText.innerText = "⚠️ 請對準掃描【NG 條碼】";
+            modal.style.display = "flex";
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        }
+
+        function closeCamera() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => { document.getElementById("camera-modal").style.display = "none"; });
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            let syncMsg = document.getElementById("sync-msg");
             
-            // 2. 啟動鏡頭（成功時執行，失敗時執行）
-            html5QrcodeScanner.render(onSuccess, onError);
-        }
-
-        // 掃描到條碼時會執行的動作
-        function onSuccess(decodedText) {
-            alert("🎉 成功讀取條碼內容：" + decodedText);
-        }
-
-        // 尋找條碼中，實務上直接忽略錯誤不影響運行
-        function onError(err) {}
+            // A. 解析工單規格 QR Code
+            if (currentScanMode === 'order') {
+                if (decodedText.includes(",")) {
+                    let parts = decodedText.split(",");
+                    if(parts.length === 5) {
+                        config.item = parts[0].trim();
+                        config.targetRoll = parseFloat(parts[1]);
+                        config.targetOrder = parseFloat(parts[2]);
+                        config.largeCm = parseFloat(parts[3]);
+                        config.smallCm = parseFloat(parts[4]);
+                        
+              document.getElementById("lbl-item").innerText = config.item;
+document.getElementById("lbl-tgt-roll").innerText = config.targetRoll;
+document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
+document.getElementById("lbl-spec-l").innerText = config.largeCm;
+document.getElementById("lbl-spec-s").innerText = config.smallCm;
+document.getElementById("lbl-show-roll").innerText = config.targetRoll;
+document.getElementById("lbl-show-order").innerText = config.targetOrder;
+closeCamera();
+syncMsg.innerText = "🔍 正在從雲端撈取這張工單的歷史進度...";
+// 主動連線 Google 撈取歷史進度 (實現交班續切)
+fetch(${gasUrl}?item=${encodeURIComponent(config.item)})
+.then(res => res.json())
+.then(data => {
+totalOrderCm = data.totalOrderCm;
+document.getElementById("view-order").innerText = totalOrderCm.toFixed(2);
+syncMsg.innerText = 🟢 工單連線成功！歷史良品已累計 ${totalOrderCm.toFixed(2)} cm;
+syncMsg.style.color = "#28a745";
+if (totalOrderCm >= config.targetOrder) {
+document.getElementById("card-order").className = "card finish";
+alert("⚠️ 雲端警告：此工單在歷史紀錄中顯示已全數完工！");
+}
+}).catch(err => { syncMsg.innerText = "⚠️ 雲端連線失敗，本次將由 0 開始累積。"; });
+return;
+}
+}
+alert("工單格式錯誤！格式應為: 品項,單卷目標,工單目標,大張公分,小張公分"); closeCamera(); return;
+}
+// B. 條碼防錯比對與處理
+if (currentScanMode === 'large' && decodedText.toLowerCase() === "large") {
+closeCamera(); processCut('large', config.largeCm); return;
+}
+if (currentScanMode === 'small' && decodedText.toLowerCase() === "small") {
+closeCamera(); processCut('small', config.smallCm); return;
+}
+if (currentScanMode === 'ng' && decodedText.toLowerCase() === "ng") {
+closeCamera();
+document.getElementById("ng-input-modal").style.display = "flex";
+let inputField = document.getElementById("ng-cm-field");
+inputField.value = "";
+setTimeout(() => { inputField.focus(); }, 300);
+return;
+}
+alert("⚠️ 掃描防錯警報：條碼與目前點選的模式不符！請重新核對。"); closeCamera();
+}
+function onScanError(err) {}
+function submitNgCm() {
+let ngCmVal = parseFloat(document.getElementById("ng-cm-field").value);
+if (isNaN(ngCmVal) || ngCmVal <= 0) { alert("請輸入正確的公分數！"); return; }
+document.getElementById("ng-input-modal").style.display = "none";
+rollNgCount++;
+rollNgCm += ngCmVal;
+document.getElementById("v-ng-cnt").innerText = rollNgCount;
+document.getElementById("v-ng-cm").innerText = rollNgCm.toFixed(2);
+processCut('ng', ngCmVal);
+}
+function closeNgModal() { document.getElementById("ng-input-modal").style.display = "none"; }
+// 📊 核心計算比對與雙向同步發送
+function processCut(size, cutVal) {
+let syncMsg = document.getElementById("sync-msg");
+if (size !== 'ng') {
+if (size === 'large') { rollLargeCount++; } else { rollSmallCount++; }
+currentRollCm += cutVal;
+document.getElementById("v-l-cnt").innerText = rollLargeCount;
+document.getElementById("v-s-cnt").innerText = rollSmallCount;
+document.getElementById("view-roll").innerText = currentRollCm.toFixed(2);
+syncMsg.innerText = "☁️ 正在與雲端同步良品進度...";
+syncMsg.style.color = "#007bff";
+} else {
+syncMsg.innerText = ⚠️ 已記錄一筆 NG (${cutVal} cm)，正在向雲端報備損耗...;
+syncMsg.style.color = "#6c757d";
+}
+// 🌟 智慧判定公式：這卷紙實際消耗量 = 良品總長 + NG總長
+let totalUsedCm = currentRollCm + rollNgCm;
+let cardRoll = document.getElementById("card-roll");
+let titleRoll = document.getElementById("title-roll");
+if (totalUsedCm > config.targetRoll) {
+cardRoll.className = "card warning"; // 超切亮橘黃燈
+let surplus = totalUsedCm - config.targetRoll;
+titleRoll.innerHTML = ⚠️ 單卷規格不符合！(原紙已超切溢出 ${surplus.toFixed(2)} cm);
+} else {
+cardRoll.className = "card normal";
+titleRoll.innerHTML = 🌀 當前【單卷】原紙消耗進度;
+}
+// 將資料拋給 Google 試算表，並即時換回所有人加總後的最新總完工公分數
+fetch(gasUrl, {
+method: "POST",
+body: JSON.stringify({
+item: config.item,
+size: (size === 'ng' ? 'NG不良品' : (size === 'large' ? '大張' : '小張')),
+cm: cutVal
+})
+})
+.then(res => res.json())
+.then(data => {
+totalOrderCm = data.totalOrderCm;
+document.getElementById("view-order").innerText = totalOrderCm.toFixed(2);
+if (size !== 'ng') { syncMsg.innerText = "🟢 良品進度雲端同步成功！"; syncMsg.style.color = "#28a745"; }
+// 檢驗整張工單是否完工
+if (totalOrderCm >= config.targetOrder) {
+document.getElementById("card-order").className = "card finish"; // 工單完工亮紅燈
+alert(⚠️ 完工通報：整張工單良品已全數達標 (總計 ${totalOrderCm.toFixed(2)} cm)！請停止裁切。);
+}
+});
+// 單卷原紙滿規格防錯提示
+if (size !== 'ng' && totalUsedCm >= config.targetRoll) {
+if (totalUsedCm === config.targetRoll) {
+cardRoll.className = "card success"; // 完美切完亮綠燈
+alert(🎉 這卷原紙完美切完 (${totalUsedCm.toFixed(2)} cm)！請更換新卷並點選換卷按鈕。);
+} else {
+alert(❌ 警告：這卷原紙總長度不符合！規格 ${config.targetRoll} cm，目前已消耗 ${totalUsedCm.toFixed(2)} cm (超長了)。\n請剪斷並點擊【換下一卷原紙】。);
+}
+}
+}
+// 🌟 跨多卷核心：更換原紙時點擊，只重置單卷，保護並鎖定工單歷史總累計
+function forceNextRoll() {
+if (config.item === "") return;
+rollLargeCount = 0; rollSmallCount = 0; rollNgCount = 0; rollNgCm = 0.0; currentRollCm = 0.0;
+document.getElementById("v-l-cnt").innerText = "0";
+document.getElementById("v-s-cnt").innerText = "0";
+document.getElementById("v-ng-cnt").innerText = "0";
+document.getElementById("v-ng-cm").innerText = "0.00";
+document.getElementById("view-roll").innerText = "0.00";
+document.getElementById("card-roll").className = "card normal";
+document.getElementById("title-roll").innerHTML = 🌀 當前【單卷】原紙消耗進度;
+document.getElementById("sync-msg").innerText = "🟢 新原紙已上機，開始重新比對單卷規格...";
+document.getElementById("sync-msg").style.color = "#28a745";
+}
+function resetAll() { if (confirm("確定要全面重置本機所有暫存數據嗎？")) { forceNextRoll(); } }
     </script>
-</body>
 </html>
