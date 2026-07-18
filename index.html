@@ -151,11 +151,7 @@
         const gasUrl = "https://google.com"; 
 
         function openCamera(mode) {
-    // 1. 防呆：確保 config 物件存在，避免第一步就卡死
-    if (typeof config === 'undefined') {
-        config = {};
-    }
-
+    if (typeof config === 'undefined') { config = {}; }
     if (mode !== 'order' && !config.item) { 
         alert("⚠️ 錯誤：請先掃描工單 QR Code 載入開工規格！"); 
         return; 
@@ -170,39 +166,54 @@
     if (mode === 'small') titleText.innerText = "📏 請對準掃描【小張條碼】";
     if (mode === 'ng') titleText.innerText = "⚠️ 請對準掃描【NG 條碼】";
     
-    // 2. 重點：先把畫面秀出來！讓使用者看到黑底，代表按鈕有反應
+    // 1. 顯示彈出視窗並修正容器大小
     modal.style.display = "flex";
-
-    // 💡【新加在這裡】強制撐開相機容器的尺寸，防止畫面縮成白色方塊
     let readerDiv = document.getElementById("reader");
     if (readerDiv) {
         readerDiv.style.width = "100%";
-        readerDiv.style.maxWidth = "400px";  // 限制最大寬度，避免電腦畫面上太大
-        readerDiv.style.minHeight = "300px"; // 給予足夠的垂直空間顯示鏡頭
-        readerDiv.style.margin = "0 auto";   // 居中對齊
+        readerDiv.style.maxWidth = "360px";
+        readerDiv.style.minHeight = "280px";
+        readerDiv.style.margin = "10px auto";
+        readerDiv.innerHTML = ""; // 清空舊殘留內容
     }
     
-    // 3. 使用 try...catch 包覆相機初始化，防止因為權限或連線問題導致整個 JS 崩潰
-    try {
-        // 如果之前有殘留的掃描器，先清除
-        if (typeof html5QrcodeScanner !== 'undefined' && html5QrcodeScanner) {
-            html5QrcodeScanner.clear().catch(e => console.log("無視清除錯誤"));
+    // 2. 智慧鏡頭初始化邏輯
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length > 0) {
+            // 如果是手機，優先使用最後一個鏡頭（通常是後置主鏡頭）；電腦則用第一個（內建視訊）
+            let cameraId = cameras[0].id; 
+            if (cameras.length > 1 && /Android|iPhone/i.test(navigator.userAgent)) {
+                cameraId = cameras[cameras.length - 1].id; 
+            }
+            
+            // 建立純淨版相機實例
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            // 直接啟動鏡頭
+            html5QrcodeScanner.start(
+                cameraId, 
+                { fps: 10, qrbox: { width: 220, height: 220 } },
+                (decodedText) => {
+                    // 掃描成功回傳
+                    if (typeof onScanSuccess === 'function') {
+                        onScanSuccess(decodedText);
+                    } else {
+                        alert("掃描成功，內容為: " + decodedText);
+                    }
+                },
+                (errorMessage) => { /* 忽略持續偵測的雜訊 */ }
+            ).catch(err => {
+                console.error("相機啟動失敗:", err);
+                alert("❌ 無法喚醒相機鏡頭，請確認權限。\n錯誤訊息: " + err);
+            });
+        } else {
+            alert("❌ 系統偵測不到這台裝置上有任何攝影機鏡頭！");
         }
-        
-        // 確保防呆：如果網頁沒定義這兩個函式，先塞空殼給它，避免崩潰
-        if (typeof onScanSuccess !== 'function') window.onScanSuccess = function(t){ alert("掃到文字: " + t); };
-        if (typeof onScanError !== 'function') window.onScanError = function(e){ console.warn(e); };
-
-        // 啟動相機
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
-        html5QrcodeScanner.render(onScanSuccess, onScanError);
-        
-    } catch (err) {
-        console.error("相機啟動失敗詳細原因:", err);
-        alert("❌ 相機啟動失敗！原因可能是：\n1. 網址開頭不是 https:// (安全連線)\n2. 手機相機權限被瀏覽器拒絕了\n\n系統錯誤訊息：" + err.message);
-    }
-}
-
+    }).catch(err => {
+        console.error("無法取得鏡頭清單:", err);
+        alert("❌ 讀取鏡頭硬體失敗，請確認是否使用 HTTPS 安全連線。");
+    });
+        }
         // 將啟動邏輯獨立出來
         function startScanner() {
             html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
@@ -210,19 +221,13 @@
         }
 
         function closeCamera() {
-        // 無論相機是否成功釋放，都強制作業畫面關閉
-        document.getElementById("camera-modal").style.display = "none";
-    
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear()
-                .then(() => { 
-                console.log("相機已成功釋放"); 
-                })
-                .catch(err => { 
-                console.log("相機釋放失敗或本就未啟動，已忽略錯誤:", err); 
-            });
-        }
+    document.getElementById("camera-modal").style.display = "none";
+    if (html5QrcodeScanner && typeof html5QrcodeScanner.stop === 'function') {
+        html5QrcodeScanner.stop()
+            .then(() => { console.log("相機已成功釋放"); html5QrcodeScanner = null; })
+            .catch(err => { console.log("釋放相機失敗:", err); });
     }
+}
 
         function onScanSuccess(decodedText) {
             let syncMsg = document.getElementById("sync-msg");
