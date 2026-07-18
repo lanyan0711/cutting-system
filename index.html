@@ -374,16 +374,5 @@ document.getElementById("sync-msg").style.color = "#28a745";
 }
 function resetAll() { if (confirm("確定要全面重置本機所有暫存數據嗎？")) { forceNextRoll(); } }
     </script>
-<script>
-        // 放在這裡確保網頁一定讀得到
-        function openCamera(mode) {
-            alert("系統測試：成功觸發 openCamera 函式！傳入模式為 " + mode);
-            let modal = document.getElementById("camera-modal");
-            if(modal) {
-                modal.style.display = "flex";
-            } else {
-                alert("找不到 id='camera-modal' 的元素！");
-            }
-        }
-</script>
+
 </html>
