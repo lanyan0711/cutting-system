@@ -172,6 +172,15 @@
     
     // 2. 重點：先把畫面秀出來！讓使用者看到黑底，代表按鈕有反應
     modal.style.display = "flex";
+
+    // 💡【新加在這裡】強制撐開相機容器的尺寸，防止畫面縮成白色方塊
+    let readerDiv = document.getElementById("reader");
+    if (readerDiv) {
+        readerDiv.style.width = "100%";
+        readerDiv.style.maxWidth = "400px";  // 限制最大寬度，避免電腦畫面上太大
+        readerDiv.style.minHeight = "300px"; // 給予足夠的垂直空間顯示鏡頭
+        readerDiv.style.margin = "0 auto";   // 居中對齊
+    }
     
     // 3. 使用 try...catch 包覆相機初始化，防止因為權限或連線問題導致整個 JS 崩潰
     try {
