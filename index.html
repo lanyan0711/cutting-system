@@ -245,7 +245,7 @@ document.getElementById("view-roll").innerText = currentRollCm.toFixed(2);
 syncMsg.innerText = "☁️ 正在與雲端同步良品進度...";
 syncMsg.style.color = "#007bff";
 } else {
-syncMsg.innerText = ⚠️ 已記錄一筆 NG (${cutVal} cm)，正在向雲端報備損耗...;
+syncMsg.innerText = `⚠️ 已記錄一筆 NG (${cutVal} cm)，正在向雲端報備損耗...`;
 syncMsg.style.color = "#6c757d";
 }
 // 🌟 智慧判定公式：這卷紙實際消耗量 = 良品總長 + NG總長
@@ -284,9 +284,9 @@ alert(`⚠️ 完工通報：整張工單良品已全數達標(總計 ${totalOrd
 if (size !== 'ng' && totalUsedCm >= config.targetRoll) {
 if (totalUsedCm === config.targetRoll) {
 cardRoll.className = "card success"; // 完美切完亮綠燈
-alert(🎉 這卷原紙完美切完 (${totalUsedCm.toFixed(2)} cm)！請更換新卷並點選換卷按鈕。);
+alert(`🎉 這卷原紙完美切完 (${totalUsedCm.toFixed(2)} cm)！請更換新卷並點選換卷按鈕。`);
 } else {
-alert(❌ 警告：這卷原紙總長度不符合！規格 ${config.targetRoll} cm，目前已消耗 ${totalUsedCm.toFixed(2)} cm (超長了)。\n請剪斷並點擊【換下一卷原紙】。);
+alert(`❌ 警告：這卷原紙總長度不符合！規格 ${config.targetRoll} cm，目前已消耗 ${totalUsedCm.toFixed(2)} cm (超長了)。\n請剪斷並點擊【換下一卷原紙】。`);
 }
 }
 }
