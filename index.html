@@ -52,7 +52,7 @@
 
     <!-- 1. 開工規格載入區 -->
     <div class="card" style="background: #e9ecef; border: 2px solid #4caf50;">
-        <button class="btn-scan-order" onclick="openCamera('order')">📷 第一步：掃描工單 QR Code 開工</button>
+        <button class="btn-scan-order" onclick="openCamera('order')">&#128247; 第一步：掃描工單 QR Code 開工</button>
         <div class="title" style="margin-top: 5px;">📋 當前工單設定規格：</div>
         <div class="info-grid">
             <div class="info-box">品項：<span id="lbl-item" class="highlight">尚未載入</span></div>
@@ -139,22 +139,52 @@
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
 
+        // 1. 在全域範圍內先宣告變數，避免污染與報錯
+        let currentScanMode = null;
+        let html5QrcodeScanner = null;
+        let config = config || {}; // 防呆：確保 config 物件存在
+
+
         // ⚠️ 核心設定：請在此處填入您在 Google 雲端部署後取得的 Apps Script 網址
         const gasUrl = "https://google.com"; 
 
         function openCamera(mode) {
-            if (mode !== 'order' && !config.item) { alert("⚠️ 錯誤：請先掃描工單 QR Code 載入開工規格！"); return; }
-            currentScanMode = mode;
-            let modal = document.getElementById("camera-modal");
-            let titleText = document.getElementById("modal-title-text");
-            if (mode === 'order') titleText.innerText = "請掃描【工單二維碼】設定規格";
-            if (mode === 'large') titleText.innerText = "📐 請對準掃描【大張條碼】";
-            if (mode === 'small') titleText.innerText = "📏 請對準掃描【小張條碼】";
-            if (mode === 'ng') titleText.innerText = "⚠️ 請對準掃描【NG 條碼】";
-            modal.style.display = "flex";
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
-            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        // 檢查開工規格
+        if (mode !== 'order' && !config.item) { 
+        alert("⚠️ 錯誤：請先掃描工單 QR Code 載入開工規格！"); 
+        return; 
         }
+    
+        currentScanMode = mode;
+        let modal = document.getElementById("camera-modal");
+        let titleText = document.getElementById("modal-title-text");
+    
+        // 設定標題文字
+        if (mode === 'order') titleText.innerText = "請掃描【工單二維碼】設定規格";
+        if (mode === 'large') titleText.innerText = "📐 請對準掃描【大張條碼】";
+        if (mode === 'small') titleText.innerText = "📏 請對準掃描【小張條碼】";
+        if (mode === 'ng') titleText.innerText = "⚠️ 請對準掃描【NG 條碼】";
+    
+        modal.style.display = "flex";
+        
+        // 2. 重點：如果之前已經有掃描器在運作，先將其清除，避免 DOM 衝突崩潰
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                startScanner(); // 清除成功後，重新啟動
+            }).catch(err => {
+                console.error("清除掃描器失敗:", err);
+                startScanner(); // 失敗也嘗試啟動，增加容錯率
+            });
+        } else {
+            startScanner(); // 第一次啟動
+        }
+        }
+
+// 將啟動邏輯獨立出來
+function startScanner() {
+    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+}
 
         function closeCamera() {
             if (html5QrcodeScanner) {
