@@ -186,12 +186,13 @@ document.getElementById("lbl-show-order").innerText = config.targetOrder;
 closeCamera();
 syncMsg.innerText = "🔍 正在從雲端撈取這張工單的歷史進度...";
 // 主動連線 Google 撈取歷史進度 (實現交班續切)
-fetch(${gasUrl}?item=${encodeURIComponent(config.item)})
+fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
 .then(res => res.json())
 .then(data => {
 totalOrderCm = data.totalOrderCm;
 document.getElementById("view-order").innerText = totalOrderCm.toFixed(2);
-syncMsg.innerText = 🟢 工單連線成功！歷史良品已累計 ${totalOrderCm.toFixed(2)} cm;
+syncMsg.innerText =
+`🟢 工單連線成功！歷史良品已累計 ${totalOrderCm.toFixed(2)} cm`;
 syncMsg.style.color = "#28a745";
 if (totalOrderCm >= config.targetOrder) {
 document.getElementById("card-order").className = "card finish";
@@ -254,10 +255,10 @@ let titleRoll = document.getElementById("title-roll");
 if (totalUsedCm > config.targetRoll) {
 cardRoll.className = "card warning"; // 超切亮橘黃燈
 let surplus = totalUsedCm - config.targetRoll;
-titleRoll.innerHTML = ⚠️ 單卷規格不符合！(原紙已超切溢出 ${surplus.toFixed(2)} cm);
+titleRoll.innerHTML =`⚠️ 單卷規格不符合！(原紙已超切溢出 ${surplus.toFixed(2)} cm)`;
 } else {
 cardRoll.className = "card normal";
-titleRoll.innerHTML = 🌀 當前【單卷】原紙消耗進度;
+titleRoll.innerHTML = "🌀 當前【單卷】原紙消耗進度";
 }
 // 將資料拋給 Google 試算表，並即時換回所有人加總後的最新總完工公分數
 fetch(gasUrl, {
@@ -276,7 +277,7 @@ if (size !== 'ng') { syncMsg.innerText = "🟢 良品進度雲端同步成功！
 // 檢驗整張工單是否完工
 if (totalOrderCm >= config.targetOrder) {
 document.getElementById("card-order").className = "card finish"; // 工單完工亮紅燈
-alert(⚠️ 完工通報：整張工單良品已全數達標 (總計 ${totalOrderCm.toFixed(2)} cm)！請停止裁切。);
+alert(`⚠️ 完工通報：整張工單良品已全數達標(總計 ${totalOrderCm.toFixed(2)} cm)！`);
 }
 });
 // 單卷原紙滿規格防錯提示
