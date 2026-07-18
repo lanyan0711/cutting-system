@@ -3,35 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>相機開啟測試-標準版</title>
-    <!-- 正確引入的核心相機工具 -->
-    <script src="https://unpkg.com/html5QrcodeScanner"></script>
+    <title>相機開啟測試</title>
+    <!-- 引入核心相機工具 -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 15px; background-color: #f0f2f5; }
-        /* 預留一個黑色相機區域，套件會把相機畫面硬生生塞進這個藍框框裡 */
-        #camera-preview { width: 100%; max-width: 320px; min-height: 250px; margin: 20px auto; border: 3px solid #007bff; border-radius: 10px; overflow: hidden; background: black; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f0f2f5; }
+        /* 測試按鈕樣式 */
+        .btn-test { font-size: 24px; font-weight: bold; padding: 20px 40px; background-color: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; }
+        /* 相機畫面外框 */
+        #camera-preview { width: 100%; max-width: 320px; margin: 20px auto; border: 3px solid #007bff; border-radius: 10px; overflow: hidden; background: black; }
     </style>
 </head>
 <body>
 
-    <h2>📷 最簡相機開啟功能測試 (標準版)</h2>
-    <p>網頁載入後，系統會自動在下方藍框準備相機：</p>
+    <h2>📷 最簡相機開啟功能測試</h2>
+    <p>請點擊下方綠色按鈕觸發相機權限：</p>
 
-    <!-- 🌟 套件會自動在這個 div 內部生成「要求相機權限」的按鈕，不需要我們手動寫 button -->
+    <!-- 點擊觸發開相機的按鈕 -->
+    <button class="btn-test" onclick="openTestCamera()">【點我打開相機】</button>
+
+    <!-- 相機畫面呈現的區塊 -->
     <div id="camera-preview"></div>
 
     <script>
-        // 網頁一打開，立刻執行初始化
-        window.onload = function() {
+        function openTestCamera() {
             // 1. 初始化掃描器物件，綁定到畫面的 camera-preview 區塊
-            // fps 設為 10，qrbox 設為 200 (掃描雷達框大小)
             const html5QrcodeScanner = new Html5QrcodeScanner("camera-preview", { fps: 10, qrbox: 200 });
             
-            // 2. 讓套件自己去渲染並在框框內產生啟動按鈕
+            // 2. 啟動鏡頭（成功時執行，失敗時執行）
             html5QrcodeScanner.render(onSuccess, onError);
-        };
+        }
 
-        // 當鏡頭對準條碼、掃描到內容時會彈出的提示
+        // 掃描到條碼時會執行的動作
         function onSuccess(decodedText) {
             alert("🎉 成功讀取條碼內容：" + decodedText);
         }
