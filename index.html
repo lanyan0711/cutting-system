@@ -150,36 +150,48 @@
         const gasUrl = "https://google.com"; 
 
         function openCamera(mode) {
-        // 檢查開工規格
-        if (mode !== 'order' && !config.item) { 
+    // 1. 防呆：確保 config 物件存在，避免第一步就卡死
+    if (typeof config === 'undefined') {
+        config = {};
+    }
+
+    if (mode !== 'order' && !config.item) { 
         alert("⚠️ 錯誤：請先掃描工單 QR Code 載入開工規格！"); 
         return; 
+    }
+    
+    currentScanMode = mode;
+    let modal = document.getElementById("camera-modal");
+    let titleText = document.getElementById("modal-title-text");
+    
+    if (mode === 'order') titleText.innerText = "請掃描【工單二維碼】設定規格";
+    if (mode === 'large') titleText.innerText = "📐 請對準掃描【大張條碼】";
+    if (mode === 'small') titleText.innerText = "📏 請對準掃描【小張條碼】";
+    if (mode === 'ng') titleText.innerText = "⚠️ 請對準掃描【NG 條碼】";
+    
+    // 2. 重點：先把畫面秀出來！讓使用者看到黑底，代表按鈕有反應
+    modal.style.display = "flex";
+    
+    // 3. 使用 try...catch 包覆相機初始化，防止因為權限或連線問題導致整個 JS 崩潰
+    try {
+        // 如果之前有殘留的掃描器，先清除
+        if (typeof html5QrcodeScanner !== 'undefined' && html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(e => console.log("無視清除錯誤"));
         }
-    
-        currentScanMode = mode;
-        let modal = document.getElementById("camera-modal");
-        let titleText = document.getElementById("modal-title-text");
-    
-        // 設定標題文字
-        if (mode === 'order') titleText.innerText = "請掃描【工單二維碼】設定規格";
-        if (mode === 'large') titleText.innerText = "📐 請對準掃描【大張條碼】";
-        if (mode === 'small') titleText.innerText = "📏 請對準掃描【小張條碼】";
-        if (mode === 'ng') titleText.innerText = "⚠️ 請對準掃描【NG 條碼】";
-    
-        modal.style.display = "flex";
         
-        // 2. 重點：如果之前已經有掃描器在運作，先將其清除，避免 DOM 衝突崩潰
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().then(() => {
-                startScanner(); // 清除成功後，重新啟動
-            }).catch(err => {
-                console.error("清除掃描器失敗:", err);
-                startScanner(); // 失敗也嘗試啟動，增加容錯率
-            });
-        } else {
-            startScanner(); // 第一次啟動
-        }
-        }
+        // 確保防呆：如果網頁沒定義這兩個函式，先塞空殼給它，避免崩潰
+        if (typeof onScanSuccess !== 'function') window.onScanSuccess = function(t){ alert("掃到文字: " + t); };
+        if (typeof onScanError !== 'function') window.onScanError = function(e){ console.warn(e); };
+
+        // 啟動相機
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        
+    } catch (err) {
+        console.error("相機啟動失敗詳細原因:", err);
+        alert("❌ 相機啟動失敗！原因可能是：\n1. 網址開頭不是 https:// (安全連線)\n2. 手機相機權限被瀏覽器拒絕了\n\n系統錯誤訊息：" + err.message);
+    }
+}
 
 // 將啟動邏輯獨立出來
 function startScanner() {
