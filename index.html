@@ -194,17 +194,26 @@
     }
 }
 
-// 將啟動邏輯獨立出來
-function startScanner() {
-    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
-}
+        // 將啟動邏輯獨立出來
+        function startScanner() {
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 });
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        }
 
         function closeCamera() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => { document.getElementById("camera-modal").style.display = "none"; });
-            }
+        // 無論相機是否成功釋放，都強制作業畫面關閉
+        document.getElementById("camera-modal").style.display = "none";
+    
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear()
+                .then(() => { 
+                console.log("相機已成功釋放"); 
+                })
+                .catch(err => { 
+                console.log("相機釋放失敗或本就未啟動，已忽略錯誤:", err); 
+            });
         }
+    }
 
         function onScanSuccess(decodedText) {
             let syncMsg = document.getElementById("sync-msg");
@@ -220,14 +229,15 @@ function startScanner() {
                         config.largeCm = parseFloat(parts[3]);
                         config.smallCm = parseFloat(parts[4]);
                         
-              document.getElementById("lbl-item").innerText = config.item;
-document.getElementById("lbl-tgt-roll").innerText = config.targetRoll;
-document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
-document.getElementById("lbl-spec-l").innerText = config.largeCm;
-document.getElementById("lbl-spec-s").innerText = config.smallCm;
-document.getElementById("lbl-show-roll").innerText = config.targetRoll;
-document.getElementById("lbl-show-order").innerText = config.targetOrder;
-closeCamera();
+            document.getElementById("lbl-item").innerText = config.item;
+            document.getElementById("lbl-tgt-roll").innerText = config.targetRoll;
+            document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
+            document.getElementById("lbl-spec-l").innerText = config.largeCm;
+            document.getElementById("lbl-spec-s").innerText = config.smallCm;
+            document.getElementById("lbl-show-roll").innerText = config.targetRoll;
+            document.getElementById("lbl-show-order").innerText = config.targetOrder;
+            closeCamera();
+            
 syncMsg.innerText = "🔍 正在從雲端撈取這張工單的歷史進度...";
 // 主動連線 Google 撈取歷史進度 (實現交班續切)
 fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
@@ -344,7 +354,7 @@ document.getElementById("v-ng-cnt").innerText = "0";
 document.getElementById("v-ng-cm").innerText = "0.00";
 document.getElementById("view-roll").innerText = "0.00";
 document.getElementById("card-roll").className = "card normal";
-document.getElementById("title-roll").innerHTML = 🌀 當前【單卷】原紙消耗進度;
+document.getElementById("title-roll").innerHTML = "🌀 當前【單卷】原紙消耗進度";
 document.getElementById("sync-msg").innerText = "🟢 新原紙已上機，開始重新比對單卷規格...";
 document.getElementById("sync-msg").style.color = "#28a745";
 }
