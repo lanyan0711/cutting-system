@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>玻纖紙裁切智慧生產看板-工號進階版</title>
-    <!-- 內嵌免聯網相機核心原始碼，確保 Android 與 iPhone 通用且 100% 成功啟動鏡頭 -->
+    <title>玻纖紙智慧裁切系統 (全數據連動版)</title>
+    <!-- 引入您指定、最穩定的真實 jsDelivr 核心相機連結 -->
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; }
@@ -18,14 +18,13 @@
         .success { border-left: 8px solid #28a745; background-color: #e8f5e9; }
         .warning { border-left: 8px solid #ff9800; background-color: #fff3cd; } 
         .finish { border-left: 8px solid #dc3545; background-color: #ffebee; }
+        .ng-card { border-left: 8px solid #6c757d; background-color: #f8f9fa; }
 
-        /* 輸入框排版 */
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
         .input-box { display: flex; flex-direction: column; font-size: 13px; font-weight: bold; color: #333; }
         .input-box input { font-size: 18px; padding: 8px; text-align: center; border: 2px solid #ccc; border-radius: 6px; margin-top: 4px; box-sizing: border-box; }
         .input-box input:focus { border-color: #007bff; outline: none; }
 
-        /* 按鈕基本樣式 */
         .btn-action { width: 100%; font-size: 16px; font-weight: bold; padding: 10px; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 5px; }
         .btn-blue { background-color: #007bff; }
         .btn-green { background-color: #28a745; }
@@ -35,7 +34,6 @@
         .btn-group { display: flex; gap: 8px; margin-top: 10px; }
         .btn-sub { flex: 1; font-size: 14px; padding: 8px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
         
-        /* 相機彈出遮罩 */
         #camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         #reader { width: 85%; max-width: 320px; border-radius: 10px; overflow: hidden; background: white; padding: 15px; box-sizing: border-box; }
         .modal-title { color: white; font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
@@ -48,7 +46,6 @@
 
     <h2>✂️ 玻纖紙智慧裁切系統 (全數據連動版)</h2>
 
-    <!-- 🌟 新增：員工資訊輸入區 -->
     <div class="card normal">
         <div class="title" style="color: #007bff;">👥 人員與交班設定</div>
         <div class="grid-inputs">
@@ -59,7 +56,6 @@
         </div>
     </div>
 
-    <!-- 1. 工單設定區 (透過二維碼掃描自動帶入 6 個參數) -->
     <div class="card" style="background: #e9ecef; border: 2px solid #6c757d;">
         <div class="title" style="color: #333;">📋 第一步：開工前掃描工單 QR Code</div>
         <button class="btn-action btn-blue" onclick="openCamera('order')">📷 掃描工單 QR Code</button>
@@ -74,7 +70,6 @@
         </div>
     </div>
 
-    <!-- 2. 玻纖紙上機登錄區 (裁切前強制掃描編號 ＋ 輸入卷長) -->
     <div class="card" style="background: #fff8e1; border: 2px solid #ffb300;">
         <div class="title" style="color: #ffb300;">🌀 第二步：玻纖紙上機登錄 (裁切前必填)</div>
         <button class="btn-action btn-green" onclick="openCamera('paper')">📷 掃描玻纖紙編號</button>
@@ -89,7 +84,6 @@
         </div>
     </div>
 
-    <!-- 3. 生產完手動輸入張數區 -->
     <div class="card" style="border: 2px dashed #007bff; background: #f8f9fa;">
         <div class="title" style="color: #007bff;">✍️ 第三步：裁切完畢，手動輸入產出數據</div>
         <div class="grid-inputs">
@@ -107,12 +101,10 @@
             </div>
         </div>
         
-        <!-- 點擊此按鈕，會將目前所有的欄位（含工號、紙張號）一次拋上雲端 Google 試算表 -->
         <button class="btn-main" id="btn-submit" onclick="submitRollToCloud()" disabled>💾 本卷切完，確認送出結算</button>
         <div id="sync-msg" class="sync-status" style="display:none;">🟡 等待開工設定...</div>
     </div>
 
-    <!-- 4. 智慧即時換算看板 -->
     <div id="card-roll" class="card normal">
         <div class="title" id="title-roll">🌀 當前【單卷】智慧換算消耗進度</div>
         <div class="value"><span id="view-roll">0.00</span> / <span id="lbl-show-roll">20000</span> <span class="unit">cm</span></div>
@@ -125,147 +117,142 @@
 
     <div class="card">
         <div class="btn-group">
-            <!-- 點擊此按鈕，會清空單卷資訊，強迫必須重新掃描下一卷原紙編號才能繼續填寫 -->
             <button class="btn-sub" onclick="forceNextRoll()" style="background-color: #ff9800; font-weight: bold;">🔄 換下一卷原紙 (單卷歸零)</button>
             <button class="btn-sub" onclick="resetAllOrder()">⚠️ 重新開始新工單</button>
         </div>
     </div>
 
-    <!-- 相機彈出視窗 -->
     <div id="camera-modal">
         <div id="modal-title-text" class="modal-title">請對準條碼</div>
         <div id="reader"></div>
         <button class="btn-close-camera" onclick="closeCamera()">❌ 關閉相機</button>
     </div>
 
+    <!-- 🌟 就是以下這段指令核心！這次絕對一字不漏，確保瀏覽器能讀到 openCamera 函數 🌟 -->
     <script>
-        // 核心配置結構
         let config = { shipDate: '', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
-        
         let totalOrderCmFromCloud = 0.0; 
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
 
-        // ⚠️ 請填入您在 Google 部署後取得的 Apps Script 網址
+        // ⚠️ 請填入您的 GAS 網址
         const gasUrl = "https://google.com"; 
 
         function openCamera(mode) {
-            if (mode === 'paper' && !config.item) 
-            { alert("⚠️ 錯誤：請先掃描第一步的工單 QR Code！"); return; }
-                currentScanMode = mode;
-                let modal = document.getElementById("camera-modal");
-                let titleText = document.getElementById("modal-title-text");
+            if (mode === 'paper' && !config.item) { alert("⚠️ 錯誤：請先掃描第一步的工單 QR Code！"); return; }
+            currentScanMode = mode;
+            let modal = document.getElementById("camera-modal");
+            let titleText = document.getElementById("modal-title-text");
+            
             if (mode === 'order') titleText.innerText = "請掃描【工單二維碼】";
             if (mode === 'paper') titleText.innerText = "🌀 請掃描【玻纖紙編號條碼】";
+            
             modal.style.display = "flex";
-            html5QrcodeScanner = new Html5QrcodeScanner("reader");
-            html5QrcodeScanner.render(onScanSuccess);
-        }
-        function closeCamera() {
-        if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().then(() => { document.getElementById("camera-modal").style.display = "none"; });
-        }
-        }
-        function onScanSuccess(decodedText) {
-        let syncMsg = document.getElementById("sync-msg");
-        // 🟢 A. 掃描工單 (解構 6 個規格參數)
-        // 預期工單 QR Code 內容格式為：出貨日期,品號,數量,工單長度,大張規格,小張規格
-        // 例如：20260720,DMS-大張,100,5000,0.69,0.51
-        if (currentScanMode === 'order') {
-        if (decodedText.includes(",")) {
-        let parts = decodedText.split(",");
-        if (parts.length === 6) {
-        config.shipDate = parts[0].trim();
-        config.item = parts[1].trim();
-        config.qty = parseInt(parts[2].trim()) || 0;
-        config.targetOrder = parseFloat(parts[3].trim()) || 0;
-        config.largeCm = parseFloat(parts[4].trim()) || 0;
-        config.smallCm = parseFloat(parts[5].trim()) || 0;
-        document.getElementById("lbl-date").innerText = config.shipDate;
-        document.getElementById("lbl-item").innerText = config.item;
-        document.getElementById("lbl-qty").innerText = config.qty;
-        document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
-        document.getElementById("lbl-spec-l").innerText = config.largeCm;
-        document.getElementById("lbl-spec-s").innerText = config.smallCm;
-        document.getElementById("lbl-show-order").innerText = config.targetOrder;
-        closeCamera();
-        validateForm();
-        syncMsg.style.display = "block";
-        syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
-        fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
-        .then(res => res.json())
-        .then(data => {
-        totalOrderCmFromCloud = data.totalOrderCm;
-        calculateProgress();
-        syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
-        }).catch(err => { syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; });
-        return;
-        }
-        }
-        alert("工單格式錯誤！二維碼必須包含 6 個參數（日期,品號,數量,工單長,大張,小張）"); closeCamera(); return;
-        }
-        // 🌀 B. 掃描玻纖紙編號
-        if (currentScanMode === 'paper') {
-        config.paperId = decodedText.trim();
-        document.getElementById("lbl-paper-id").innerText = config.paperId;
-        closeCamera();
-        validateForm();
-        calculateProgress();
-        return;
-        }
+            
+            // 正式呼叫外部 html5-qrcode 套件功能
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
         }
 
-    // 即時按鈕解鎖驗證
-    function validateForm() {
-    let empId = document.getElementById("emp-id").value.trim();
-    let btn = document.getElementById("btn-submit");
-    // 限制：必須「填工號」＋「有工單」＋「有掃描玻纖紙編號」按鈕才能點，嚴格防止產線漏填資料！
-    if (empId !== "" && config.item !== "" && config.paperId !== "") {
-    btn.disabled = false;
-    } else {
-    btn.disabled = true;
-    }
-    }
-    // 🧮 核心計算換算邏輯
-    function calculateProgress() {
-    let rollTarget = parseFloat(document.getElementById("input-roll-target").value) || 0;
-    let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
-    let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
-    let ngCm = parseFloat(document.getElementById("input-ng-cm").value) || 0;
-    config.targetRoll = rollTarget;
-    document.getElementById("lbl-show-roll").innerText = rollTarget;
-    // 換算長度
-    let largeTotalCm = largePcs * config.largeCm;
-    let smallTotalCm = smallPcs * config.smallCm;
-    let currentRollTotalUsed = largeTotalCm + smallTotalCm + ngCm;
-    document.getElementById("view-roll").innerText = currentRollTotalUsed.toFixed(2);
-    // 單卷規格即時核對 (良品 + NG公分)
-    let cardRoll = document.getElementById("card-roll");
-    let titleRoll = document.getElementById("title-roll");
-    if (currentRollTotalUsed > rollTarget) {
-    cardRoll.className = "card warning";
-    let surplus = currentRollTotalUsed - rollTarget;
-    titleRoll.innerHTML = `⚠️ 單卷消耗不符合！(換算總長已超切 ${surplus.toFixed(2)} cm)`;
-    } else if (currentRollTotalUsed === rollTarget && currentRollTotalUsed > 0) {
-    cardRoll.className = "card success";
-    titleRoll.innerHTML = "🎉 消耗公分完美符合本卷規格！";
-    } else {
-    cardRoll.className = "card normal";
-    titleRoll.innerHTML ="🌀 當前【單卷】智慧換算消耗進度";
-    }
-    // 即時預估工單大盤進度
-    let currentRollGoodCm = largeTotalCm + smallTotalCm;
-    let estimatedOrderTotal = totalOrderCmFromCloud + currentRollGoodCm;
-    document.getElementById("view-order").innerText = estimatedOrderTotal.toFixed(2);
-    let cardOrder = document.getElementById("card-order");
-    if (estimatedOrderTotal >= config.targetOrder && config.targetOrder > 0) {
-    cardOrder.className = "card finish";
-    } else {
-    cardOrder.className = "card normal";
-    }
-    return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
-    }
-// 💾 送出雲端結算
+        function closeCamera() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => { 
+                    document.getElementById("camera-modal").style.display = "none"; 
+                }).catch(err => console.log(err));
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            let syncMsg = document.getElementById("sync-msg");
+            
+            if (currentScanMode === 'order') {
+                if (decodedText.includes(",")) {
+                    let parts = decodedText.split(",");
+                    if (parts.length === 6) {
+                        config.shipDate = parts[0].trim();
+                        config.item = parts[1].trim();
+                        config.qty = parseInt(parts[2].trim()) || 0;
+                        config.targetOrder = parseFloat(parts[3].trim()) || 0;
+                        config.largeCm = parseFloat(parts[4].trim()) || 0;
+                        config.smallCm = parseFloat(parts[5].trim()) || 0;
+                        
+                        document.getElementById("lbl-date").innerText = config.shipDate;
+document.getElementById("lbl-item").innerText = config.item;
+document.getElementById("lbl-qty").innerText = config.qty;
+document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
+document.getElementById("lbl-spec-l").innerText = config.largeCm;
+document.getElementById("lbl-spec-s").innerText = config.smallCm;
+document.getElementById("lbl-show-order").innerText = config.targetOrder;
+closeCamera();
+validateForm();
+syncMsg.style.display = "block";
+syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
+fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
+.then(res => res.json())
+.then(data => {
+totalOrderCmFromCloud = data.totalOrderCm;
+calculateProgress();
+syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
+}).catch(err => { syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; });
+return;
+}
+}
+alert("工單格式錯誤！應包含6個參數"); closeCamera(); return;
+}
+if (currentScanMode === 'paper') {
+config.paperId = decodedText.trim();
+document.getElementById("lbl-paper-id").innerText = config.paperId;
+closeCamera();
+validateForm();
+calculateProgress();
+return;
+}
+}
+function onScanError(err) {}
+function validateForm() {
+let empId = document.getElementById("emp-id").value.trim();
+let btn = document.getElementById("btn-submit");
+if (empId !== "" && config.item !== "" && config.paperId !== "") {
+btn.disabled = false;
+} else {
+btn.disabled = true;
+}
+}
+function calculateProgress() {
+let rollTarget = parseFloat(document.getElementById("input-roll-target").value) || 0;
+let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
+let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
+let ngCm = parseFloat(document.getElementById("input-ng-cm").value) || 0;
+config.targetRoll = rollTarget;
+document.getElementById("lbl-show-roll").innerText = rollTarget;
+let largeTotalCm = largePcs * config.largeCm;
+let smallTotalCm = smallPcs * config.smallCm;
+let currentRollTotalUsed = largeTotalCm + smallTotalCm + ngCm;
+document.getElementById("view-roll").innerText = currentRollTotalUsed.toFixed(2);
+let cardRoll = document.getElementById("card-roll");
+let titleRoll = document.getElementById("title-roll");
+if (currentRollTotalUsed > rollTarget) {
+cardRoll.className = "card warning";
+let surplus = currentRollTotalUsed - rollTarget;
+titleRoll.innerHTML = `⚠️ 單卷消耗不符合！(換算總長已超切 ${surplus.toFixed(2)} cm)`;
+} else if (currentRollTotalUsed === rollTarget && currentRollTotalUsed > 0) {
+cardRoll.className = "card success";
+titleRoll.innerHTML = "🎉 消耗公分完美符合本卷規格！";
+} else {
+cardRoll.className = "card normal";
+titleRoll.innerHTML = "🌀 當前【單卷】智慧換算消耗進度";
+}
+let currentRollGoodCm = largeTotalCm + smallTotalCm;
+let estimatedOrderTotal = totalOrderCmFromCloud + currentRollGoodCm;
+document.getElementById("view-order").innerText = estimatedOrderTotal.toFixed(2);
+let cardOrder = document.getElementById("card-order");
+if (estimatedOrderTotal >= config.targetOrder && config.targetOrder > 0) {
+cardOrder.className = "card finish";
+} else {
+cardOrder.className = "card normal";
+}
+return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
+}
 function submitRollToCloud() {
 let empId = document.getElementById("emp-id").value.trim();
 let res = calculateProgress();
@@ -273,45 +260,28 @@ let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
 let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
 let ngCm = document.getElementById("input-ng-cm").value;
 if (res.totalRollUsed === 0) { alert("請輸入張數數據再送出！"); return; }
-// 原紙公分數不符時跳出防錯警告
 if (res.totalRollUsed !== config.targetRoll) {
-if (!confirm(⚠️ 警告：換算總長度(${res.totalRollUsed.toFixed(2)}cm) 與 玻纖紙單卷設定長度(${config.targetRoll}cm) 不符！\n是否確認要強行報完送出？)) {
-return;
-}
+if (!confirm("⚠️ 警告：換算長度與玻纖紙單卷長度不符！是否確認送出？")) return;
 }
 let syncMsg = document.getElementById("sync-msg");
 syncMsg.style.display = "block";
-syncMsg.innerText = "☁️ 正在打包所有數據(工號、編號、規格)上傳雲端...";
-// 🌟 打包傳送給後端：包含輸入日期（自動）、工號、玻纖紙編號、工單詳細規格
+syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
 fetch(gasUrl, {
 method: "POST",
 body: JSON.stringify({
-empId: empId,
-shipDate: config.shipDate,
-item: config.item,
-qty: config.qty,
-orderTarget: config.targetOrder,
-paperId: config.paperId,
-rollTarget: config.targetRoll,
-largePcs: largePcs,
-smallPcs: smallPcs,
-ngCm: ngCm,
-goodCm: res.currentRollGoodCm
+empId: empId, shipDate: config.shipDate, item: config.item, qty: config.qty,
+orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
+largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
 })
 })
 .then(response => response.json())
 .then(data => {
 totalOrderCmFromCloud = data.totalOrderCm;
-syncMsg.innerText = "🟢 本卷結算完成！已成功拋入雲端資料庫。";
-alert(`🎉 結算成功！\n工單目前雲端良品總累計：${totalOrderCmFromCloud.toFixed(2)} cm`);
-// 上傳成功，自動啟動換下一卷清空程序
+syncMsg.innerText = "🟢 本卷結算完成！";
+alert(`🎉 結算成功！雲端目前累積良品：${totalOrderCmFromCloud.toFixed(2)} cm`);
 forceNextRoll();
-})
-.catch(err => {
-syncMsg.innerText = "❌ 雲端上傳失敗，請核對網路狀態！";
-});
+}).catch(err => { syncMsg.innerText = "❌ 雲端上傳失敗！"; });
 }
-// 🔄 換下一卷原紙程序：清空欄位，且【強制要求重新掃描下一卷玻纖紙編號】
 function forceNextRoll() {
 config.paperId = "";
 document.getElementById("lbl-paper-id").innerText = "尚未掃描";
@@ -322,7 +292,7 @@ validateForm();
 calculateProgress();
 }
 function resetAllOrder() {
-if (confirm("確定要重置目前所有的工單與暫存數據嗎？")) {
+if (confirm("確定要重置目前的工單嗎？")) {
 config = { shipDate: '', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
 totalOrderCmFromCloud = 0.0;
 document.getElementById("lbl-date").innerText = "--";
@@ -334,5 +304,4 @@ document.getElementById("lbl-spec-s").innerText = "0.00";
 forceNextRoll();
 }
 }
-
 
