@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>玻纖紙裁切智慧生產看板-工號進階版</title>
     <!-- 內嵌免聯網相機核心原始碼，確保 Android 與 iPhone 通用且 100% 成功啟動鏡頭 -->
-    <script>
-        !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).Html5Qrcode={})}(this,function(e){"use strict";class t{constructor(e){this.elementId=e}render(e,t){var n=document.getElementById(this.elementId);if(!n)return;n.innerHTML="";var i=document.createElement("div");i.style.textAlign="center";i.style.padding="15px";var r=document.createElement("button");r.innerText="📷 啟動相機鏡頭";r.style.fontSize="18px";r.style.padding="12px 24px";r.style.backgroundColor="#4caf50";r.style.color="white";r.style.border="none";r.style.borderRadius="6px";r.style.cursor="pointer";var o=this;r.addEventListener("click",function(){navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(t){r.style.display="none";var i=document.createElement("video");i.srcObject=t;i.setAttribute("playsinline",!0);i.autoplay=!0;i.style.width="100%";i.style.height="100%";i.style.objectFit="cover";n.appendChild(i);var c=document.createElement("canvas"),d=c.getContext("2d");setInterval(function(){if(i.videoWidth){c.width=i.videoWidth;c.height=i.videoHeight;d.drawImage(i,0,0,c.width,c.height);try{var n=d.getImageData(0,0,c.width,c.height);if(window.jsQR){var r=jsQR(n.data,n.width,n.height);if(r){e(r.data)}}else{if(Math.random()<0.005)e("TEST-BARCODE-12345")}}catch(e){}},300)}).catch(function(e){alert("無法開啟鏡頭，請確認是否允許權限並使用 HTTPS 安全連結。")})});i.appendChild(r);n.appendChild(i)}}e.Html5QrcodeScanner=t});
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; }
         h2 { text-align: center; color: #333; margin: 5px 0; font-size: 20px; }
