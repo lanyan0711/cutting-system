@@ -137,7 +137,7 @@
         let html5QrcodeScanner = null;
 
         // ⚠️ 請填入您的 GAS 網址
-        const gasUrl = "https://google.com"; 
+        const gasUrl = "https://script.google.com/macros/s/AKfycbzXVqrGc-28IpZRAEsEAhrMut61VDm8hVHgiYQISk8E1D60OodAIu9L3eGRlG4b6gjISw/exec"; 
 
         function openCamera(mode) {
             if (mode === 'paper' && !config.item) { alert("⚠️ 錯誤：請先掃描第一步的工單 QR Code！"); return; }
@@ -272,7 +272,7 @@ syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
 fetch(gasUrl, {
 method: "POST",
 body: JSON.stringify({
-empId: empId, shipDate: config.shipDate, item: config.item, qty: config.qty,
+empId: empId, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
 orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
 largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
 })
