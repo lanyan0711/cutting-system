@@ -62,7 +62,7 @@
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 13px; margin-top: 8px; background: white; padding: 8px; border-radius: 6px;">
             <div>出貨日期：<span id="lbl-date" style="font-weight:bold;">--</span></div>
-            <div>廠區：<span id="lbl-date" style="font-weight:bold;">--</span></div>
+            <div>廠區：<span id="lbl-fac" style="font-weight:bold;">--</span></div>
             <div>品號：<span id="lbl-item" style="font-weight:bold; color:#007bff;">--</span></div>
             <div>數量：<span id="lbl-qty" style="font-weight:bold;">--</span></div>
             <div>工單長度：<span id="lbl-tgt-order" style="font-weight:bold; color:#dc3545;">0</span> cm</div>
@@ -131,7 +131,7 @@
 
     <!-- 🌟 就是以下這段指令核心！這次絕對一字不漏，確保瀏覽器能讀到 openCamera 函數 🌟 -->
     <script>
-        let config = { shipDate: '', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
+        let config = { shipDate: '', item: '', fac:'', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
         let totalOrderCmFromCloud = 0.0; 
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
@@ -169,46 +169,48 @@
             if (currentScanMode === 'order') {
                 if (decodedText.includes(",")) {
                     let parts = decodedText.split(",");
-                    if (parts.length === 6) {
+                    if (parts.length === 7) {
                         config.shipDate = parts[0].trim();
-                        config.item = parts[1].trim();
-                        config.qty = parseInt(parts[2].trim()) || 0;
-                        config.targetOrder = parseFloat(parts[3].trim()) || 0;
-                        config.largeCm = parseFloat(parts[4].trim()) || 0;
-                        config.smallCm = parseFloat(parts[5].trim()) || 0;
+                        config.fac = parts[1].trim();
+                        config.item = parts[2].trim();
+                        config.qty = parseInt(parts[3].trim()) || 0;
+                        config.targetOrder = parseFloat(parts[4].trim()) || 0;
+                        config.largeCm = parseFloat(parts[5].trim()) || 0;
+                        config.smallCm = parseFloat(parts[6].trim()) || 0;
                         
                         document.getElementById("lbl-date").innerText = config.shipDate;
-document.getElementById("lbl-item").innerText = config.item;
-document.getElementById("lbl-qty").innerText = config.qty;
-document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
-document.getElementById("lbl-spec-l").innerText = config.largeCm;
-document.getElementById("lbl-spec-s").innerText = config.smallCm;
-document.getElementById("lbl-show-order").innerText = config.targetOrder;
-closeCamera();
-validateForm();
-syncMsg.style.display = "block";
-syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
-fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
-.then(res => res.json())
-.then(data => {
-totalOrderCmFromCloud = data.totalOrderCm;
-calculateProgress();
-syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
-}).catch(err => { syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; });
-return;
-}
-}
-alert("工單格式錯誤！應包含6個參數"); closeCamera(); return;
-}
-if (currentScanMode === 'paper') {
-config.paperId = decodedText.trim();
-document.getElementById("lbl-paper-id").innerText = config.paperId;
-closeCamera();
-validateForm();
-calculateProgress();
-return;
-}
-}
+                        document.getElementById("lbl-fac").innerText = config.fac;
+                        document.getElementById("lbl-item").innerText = config.item;
+                        document.getElementById("lbl-qty").innerText = config.qty;
+                        document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
+                        document.getElementById("lbl-spec-l").innerText = config.largeCm;
+                        document.getElementById("lbl-spec-s").innerText = config.smallCm;
+                        document.getElementById("lbl-show-order").innerText = config.targetOrder;
+                closeCamera();
+                validateForm();
+                syncMsg.style.display = "block";
+                syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
+                fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
+                .then(res => res.json())
+                .then(data => {
+                totalOrderCmFromCloud = data.totalOrderCm;
+                calculateProgress();
+                syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
+                }).catch(err => { syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; });
+                return;
+                }
+                }
+                alert("工單格式錯誤！應包含7個參數"); closeCamera(); return;
+                }
+                if (currentScanMode === 'paper') {
+                config.paperId = decodedText.trim();
+                document.getElementById("lbl-paper-id").innerText = config.paperId;
+                closeCamera();
+                validateForm();
+                calculateProgress();
+                return;
+                }
+                }
 function onScanError(err) {}
 function validateForm() {
 let empId = document.getElementById("emp-id").value.trim();
