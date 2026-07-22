@@ -190,7 +190,7 @@
                 validateForm();
                 syncMsg.style.display = "block";
                 syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
-                fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}`)
+                fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}&shipDate=${encodeURIComponent(config.shipDate)}&fac=${encodeURIComponent(config.fac)}&qty=${encodeURIComponent(config.qty)}`)
                 .then(res => res.json())
                 .then(data => {
                 totalOrderCmFromCloud = data.totalOrderCm;
@@ -222,7 +222,7 @@ btn.disabled = true;
 }
 }
 function calculateProgress() {
-let rollTarget = parseFloat(document.getElementById("input-roll-target").value) || 0;
+let rollTarget = parseFloat(document.getElementById("input-roll-target").value)*100 || 0;
 let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
 let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
 let ngCm = parseFloat(document.getElementById("input-ng-cm").value) || 0;
@@ -296,9 +296,10 @@ calculateProgress();
 }
 function resetAllOrder() {
 if (confirm("確定要重置目前的工單嗎？")) {
-config = { shipDate: '', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
+config = { shipDate: '', fac:'', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
 totalOrderCmFromCloud = 0.0;
 document.getElementById("lbl-date").innerText = "--";
+document.getElementById("lbl-fac").innerText ="--";
 document.getElementById("lbl-item").innerText = "--";
 document.getElementById("lbl-qty").innerText = "--";
 document.getElementById("lbl-tgt-order").innerText = "0";
