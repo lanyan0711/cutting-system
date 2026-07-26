@@ -195,10 +195,12 @@
                         syncMsg.style.color = "#007bff"; // 預設藍色
                         syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
                         
+                        console.log(config.shipDate);
                         // 🌟 核心修正：發送四條件查詢
                         fetch(`${gasUrl}?item=${encodeURIComponent(String(config.item))}&shipDate=${encodeURIComponent(String(config.shipDate))}&fac=${encodeURIComponent(String(config.fac))}&qty=${encodeURIComponent(String(config.qty))}`)
                         .then(res => res.json())
                         .then(data => {
+                            console.log(data);
                             totalOrderCmFromCloud = data.totalOrderCm;
                             calculateProgress();
                             // 🌟 核心防錯：工單連線成功時，強制換成綠色字體，並完美鎖定！
