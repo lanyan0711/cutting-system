@@ -276,6 +276,7 @@ function calculateProgress() {
     let largeTotalCm = largePcs * config.largeCm;
     let smallTotalCm = smallPcs * config.smallCm;
     let todayNewCm = largeTotalCm + smallTotalCm + ngCm;
+    let currentRollCm = 0;
 
     // 🌟 2. 核心修正：將「雲端抓回來的歷史消耗 currentRollCm」與「今天新切的 todayNewCm」相加！
     // 這樣換手機時，分子就會立刻跳出 50250.00 歷史進度了！
