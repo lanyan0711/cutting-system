@@ -166,6 +166,7 @@
         function onScanSuccess(decodedText) {
             let syncMsg = document.getElementById("sync-msg");
             
+            // ✅ 請核對並將 index.html 裡的工單 fetch 區塊修改為這段正確寫法：
             if (currentScanMode === 'order') {
                 if (decodedText.includes(",")) {
                     let parts = decodedText.split(",");
@@ -186,23 +187,37 @@
                         document.getElementById("lbl-spec-l").innerText = config.largeCm;
                         document.getElementById("lbl-spec-s").innerText = config.smallCm;
                         document.getElementById("lbl-show-order").innerText = config.targetOrder;
-                closeCamera();
-                
-                syncMsg.style.display = "block";
-                syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
-                fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}&shipDate=${encodeURIComponent(config.shipDate)}&fac=${encodeURIComponent(config.fac)}&qty=${encodeURIComponent(config.qty)}`)
-                .then(res => res.json())
-                .then(data => {
-                totalOrderCmFromCloud = data.totalOrderCm;
-                calculateProgress();
-                syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
-                validateForm();
-                }).catch(err => { syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; });
-                return;
-                }
+                        
+                        closeCamera();
+                        
+                        let syncMsg = document.getElementById("sync-msg");
+                        syncMsg.style.display = "block";
+                        syncMsg.style.color = "#007bff"; // 預設藍色
+                        syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
+                        
+                        // 🌟 核心修正：發送四條件查詢
+                        fetch(`${gasUrl}?item=${encodeURIComponent(String(config.item))}&shipDate=${encodeURIComponent(String(config.shipDate))}&fac=${encodeURIComponent(String(config.fac))}&qty=${encodeURIComponent(String(config.qty))}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            totalOrderCmFromCloud = data.totalOrderCm;
+                            calculateProgress();
+                            // 🌟 核心防錯：工單連線成功時，強制換成綠色字體，並完美鎖定！
+                            syncMsg.style.color = "#28a745";
+                            syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
+                            
+                            // 🌟 最關鍵修正：把檢查欄位鎖定按鈕的動作，搬到「雲端回傳成功之後」才執行，防止提早誤報失敗！
+                            validateForm(); 
+                        })
+                        .catch(err => { 
+                            syncMsg.style.color = "#ff9800"; // 只有在真的斷線或沒資料時，才亮起黃色警告
+                            syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; 
+                            validateForm();
+                        });
+                        return;
+                    }
                 }
                 alert("工單格式錯誤！應包含7個參數"); closeCamera(); return;
-                }
+            }
                             // 🌀 B. 掃描玻纖紙編號 (升級：掃完立刻去雲端查昨天有沒有人切過這卷)
             if (currentScanMode === 'paper') {
                 config.paperId = decodedText.trim();
