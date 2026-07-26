@@ -211,6 +211,8 @@
                             validateForm(); 
                         })
                         .catch(err => { 
+                            console.error(err);
+                            alert(err);
                             syncMsg.style.color = "#ff9800"; // 只有在真的斷線或沒資料時，才亮起黃色警告
                             syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; 
                             validateForm();
