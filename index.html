@@ -187,7 +187,7 @@
                         document.getElementById("lbl-spec-s").innerText = config.smallCm;
                         document.getElementById("lbl-show-order").innerText = config.targetOrder;
                 closeCamera();
-                validateForm();
+                
                 syncMsg.style.display = "block";
                 syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
                 fetch(`${gasUrl}?item=${encodeURIComponent(config.item)}&shipDate=${encodeURIComponent(config.shipDate)}&fac=${encodeURIComponent(config.fac)}&qty=${encodeURIComponent(config.qty)}`)
@@ -196,6 +196,7 @@
                 totalOrderCmFromCloud = data.totalOrderCm;
                 calculateProgress();
                 syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
+                validateForm();
                 }).catch(err => { syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; });
                 return;
                 }
