@@ -242,40 +242,56 @@ btn.disabled = false;
 btn.disabled = true;
 }
 }
+// 🧮 修正後的單卷計算公式：【當前單卷總消耗 = 雲端此卷歷史已消耗 + 現場今天新切公分數】
 function calculateProgress() {
-let rollTarget = parseFloat(document.getElementById("input-roll-target").value)*100 || 0;
-let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
-let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
-let ngCm = parseFloat(document.getElementById("input-ng-cm").value) || 0;
-config.targetRoll = rollTarget;
-document.getElementById("lbl-show-roll").innerText = rollTarget;
-let largeTotalCm = largePcs * config.largeCm;
-let smallTotalCm = smallPcs * config.smallCm;
-let currentRollTotalUsed = largeTotalCm + smallTotalCm + ngCm;
-document.getElementById("view-roll").innerText = currentRollTotalUsed.toFixed(2);
-let cardRoll = document.getElementById("card-roll");
-let titleRoll = document.getElementById("title-roll");
-if (currentRollTotalUsed > rollTarget) {
-cardRoll.className = "card warning";
-let surplus = currentRollTotalUsed - rollTarget;
-titleRoll.innerHTML = `⚠️ 單卷消耗不符合！(換算總長已超切 ${surplus.toFixed(2)} cm)`;
-} else if (currentRollTotalUsed === rollTarget && currentRollTotalUsed > 0) {
-cardRoll.className = "card success";
-titleRoll.innerHTML = "🎉 消耗公分完美符合本卷規格！";
-} else {
-cardRoll.className = "card normal";
-titleRoll.innerHTML = "🌀 當前【單卷】智慧換算消耗進度";
-}
-let currentRollGoodCm = largeTotalCm + smallTotalCm;
-let estimatedOrderTotal = totalOrderCmFromCloud + currentRollGoodCm;
-document.getElementById("view-order").innerText = estimatedOrderTotal.toFixed(2);
-let cardOrder = document.getElementById("card-order");
-if (estimatedOrderTotal >= config.targetOrder && config.targetOrder > 0) {
-cardOrder.className = "card finish";
-} else {
-cardOrder.className = "card normal";
-}
-return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
+    let rollTarget = parseFloat(document.getElementById("input-roll-target").value) * 100 || 0; // 如果您有輸入 450 自動換算 45000 的話
+    let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
+    let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
+    let ngCm = parseFloat(document.getElementById("input-ng-cm").value) || 0;
+
+    config.targetRoll = rollTarget;
+    document.getElementById("lbl-show-roll").innerText = rollTarget;
+
+    // 1. 先計算「今天這台手機新切出來」的長度
+    let largeTotalCm = largePcs * config.largeCm;
+    let smallTotalCm = smallPcs * config.smallCm;
+    let todayNewCm = largeTotalCm + smallTotalCm + ngCm;
+
+    // 🌟 2. 核心修正：將「雲端抓回來的歷史消耗 currentRollCm」與「今天新切的 todayNewCm」相加！
+    // 這樣換手機時，分子就會立刻跳出 50250.00 歷史進度了！
+    let currentRollTotalUsed = currentRollCm + todayNewCm;
+
+    // 刷新單卷藍色看板的分子數字
+    document.getElementById("view-roll").innerText = currentRollTotalUsed.toFixed(2);
+
+    // 單卷原紙消耗規格即時比對
+    let cardRoll = document.getElementById("card-roll");
+    let titleRoll = document.getElementById("title-roll");
+    if (currentRollTotalUsed > rollTarget) {
+        cardRoll.className = "card warning"; // 超切亮橘黃燈
+        let surplus = currentRollTotalUsed - rollTarget;
+        titleRoll.innerHTML = `⚠️ 單卷消耗不符合！(包含歷史總消耗已超切 ${surplus.toFixed(2)} cm)`;
+    } else if (currentRollTotalUsed === rollTarget && currentRollTotalUsed > 0) {
+        cardRoll.className = "card success"; // 剛好符合亮綠燈
+        titleRoll.innerHTML = "🎉 消耗公分完美符合本卷規格！";
+    } else {
+        cardRoll.className = "card normal";
+        titleRoll.innerHTML = "🌀 當前【單卷】智慧換算消耗進度";
+    }
+
+    // 工單歷史總累積大盤預估 (工單歷史總累積 + 今天新切的良品)
+    let currentRollGoodCm = largeTotalCm + smallTotalCm;
+    let estimatedOrderTotal = totalOrderCmFromCloud + currentRollGoodCm;
+    document.getElementById("view-order").innerText = estimatedOrderTotal.toFixed(2);
+
+    let cardOrder = document.getElementById("card-order");
+    if (estimatedOrderTotal >= config.targetOrder && config.targetOrder > 0) {
+        cardOrder.className = "card finish";
+    } else {
+        cardOrder.className = "card normal";
+    }
+
+    return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
 }
 function submitRollToCloud() {
 let empId = document.getElementById("emp-id").value.trim();
