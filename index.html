@@ -202,15 +202,36 @@
                 }
                 alert("工單格式錯誤！應包含7個參數"); closeCamera(); return;
                 }
-                if (currentScanMode === 'paper') {
+                            // 🌀 B. 掃描玻纖紙編號 (升級：掃完立刻去雲端查昨天有沒有人切過這卷)
+            if (currentScanMode === 'paper') {
                 config.paperId = decodedText.trim();
                 document.getElementById("lbl-paper-id").innerText = config.paperId;
                 closeCamera();
-                validateForm();
-                calculateProgress();
+                
+                let syncMsg = document.getElementById("sync-msg");
+                syncMsg.style.display = "block";
+                syncMsg.innerText = "🔍 正在查詢此卷玻纖紙的跨日歷史剩餘長度...";
+                
+                // 飛去雲端用 paperId 查這卷紙被用掉多少公分
+                fetch(`${gasUrl}?paperId=${encodeURIComponent(config.paperId)}`)
+                .then(res => res.json())
+                .then(data => {
+                    // 🌟 核心記憶復活：把這卷紙過去被用掉的總長度，直接載入當作基礎進度！
+                    currentRollCm = data.totalPaperUsedCm; 
+                    
+                    calculateProgress(); // 觸發即時計算與換算
+                    syncMsg.innerText = `🟢 玻纖紙連線成功！這卷原紙歷史已消耗：${currentRollCm.toFixed(2)} cm`;
+                    validateForm();
+                })
+                .catch(err => {
+                    currentRollCm = 0.0;
+                    calculateProgress();
+                    syncMsg.innerText = "⚠️ 查詢失敗，此卷原紙將由 0 開始計算。";
+                    validateForm();
+                });
                 return;
                 }
-                }
+        }
 function onScanError(err) {}
 function validateForm() {
 let empId = document.getElementById("emp-id").value.trim();
