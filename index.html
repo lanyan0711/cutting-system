@@ -201,7 +201,7 @@
                         .then(res => res.json())
                         .then(data => {
                             console.log(data);
-                            alert(JSON.stringify(config));
+                            alert(JSON.stringify(data));
                             totalOrderCmFromCloud = data.totalOrderCm;
                             calculateProgress();
                             // 🌟 核心防錯：工單連線成功時，強制換成綠色字體，並完美鎖定！
