@@ -135,6 +135,7 @@
         let totalOrderCmFromCloud = 0.0; 
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
+        let currentRollCm = 0;
 
         // ⚠️ 請填入您的 GAS 網址
         const gasUrl = "https://script.google.com/macros/s/AKfycbzXVqrGc-28IpZRAEsEAhrMut61VDm8hVHgiYQISk8E1D60OodAIu9L3eGRlG4b6gjISw/exec"; 
@@ -276,7 +277,6 @@ function calculateProgress() {
     let largeTotalCm = largePcs * config.largeCm;
     let smallTotalCm = smallPcs * config.smallCm;
     let todayNewCm = largeTotalCm + smallTotalCm + ngCm;
-    let currentRollCm = 0;
 
     // 🌟 2. 核心修正：將「雲端抓回來的歷史消耗 currentRollCm」與「今天新切的 todayNewCm」相加！
     // 這樣換手機時，分子就會立刻跳出 50250.00 歷史進度了！
