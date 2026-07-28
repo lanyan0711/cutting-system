@@ -215,10 +215,10 @@
                         
                         // 🌟 核心修正：發送四條件查詢
                         //fetch(`${gasUrl}?item=${encodeURIComponent(String(config.item))}&shipDate=${encodeURIComponent(String(config.shipDate))}&fac=${encodeURIComponent(String(config.fac))}&qty=${encodeURIComponent(String(config.qty))}`)
-                         fetch(`${gasUrl}?number=${encodeURIComponent(config.number)}`)
-                        .then(res => res.json())
+                        fetch(`${gasUrl}?number=${encodeURIComponent(config.number)}`)
+                        .then(res => { console.log("HTTP",res.status); return res.json()})
                         .then(data => {
-                            console.log(data);
+                            console.log("GAS回傳：",data);
                             alert(JSON.stringify(data));
                             totalOrderCmFromCloud = parseFloat(data.totalOrderCm) || 0;
                             totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
