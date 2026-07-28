@@ -61,6 +61,7 @@
         <button class="btn-action btn-blue" onclick="openCamera('order')"> 📷 掃描工單 QR Code</button>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 13px; margin-top: 8px; background: white; padding: 8px; border-radius: 6px;">
+            <div>編號：<span id="lbl-number" style="font-weight:bold;">--</span></div>
             <div>出貨日期：<span id="lbl-date" style="font-weight:bold;">--</span></div>
             <div>廠區：<span id="lbl-fac" style="font-weight:bold;">--</span></div>
             <div>品號：<span id="lbl-item" style="font-weight:bold; color:#007bff;">--</span></div>
@@ -106,6 +107,16 @@
         <div id="sync-msg" class="sync-status" style="display:none;">🟡 等待開工設定...</div>
     </div>
 
+    <div id="card-largePcs" class="card normal">
+        <div class="title" id="title-largePcs">🌀 雲端【工單歷史總累計】大張-張數</div>
+        <div class="value"><span id="view-roll">0.00</span> / <span id="lbl-show-largePcs">20000</span> <span class="unit">張</span></div>
+    </div>
+
+    <div id="card-smallPcs" class="card normal">
+        <div class="title" id="title-smallPcs">🌀 雲端【工單歷史總累計】小張-張數</div>
+        <div class="value"><span id="view-roll">0.00</span> / <span id="lbl-show-smallPcs">20000</span> <span class="unit">張</span></div>
+    </div>
+
     <div id="card-roll" class="card normal">
         <div class="title" id="title-roll">🌀 當前【單卷】智慧換算消耗進度</div>
         <div class="value"><span id="view-roll">0.00</span> / <span id="lbl-show-roll">20000</span> <span class="unit">cm</span></div>
@@ -131,7 +142,7 @@
 
     <!-- 🌟 就是以下這段指令核心！這次絕對一字不漏，確保瀏覽器能讀到 openCamera 函數 🌟 -->
     <script>
-        let config = { shipDate: '', item: '', fac:'', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 20000.0, paperId: '' };
+        let config = { number:'',shipDate: '', item: '', fac:'', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0, paperId: '' };
         let totalOrderCmFromCloud = 0.0; 
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
