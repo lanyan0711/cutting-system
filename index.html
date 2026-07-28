@@ -355,7 +355,7 @@ syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
 fetch(gasUrl, {
 method: "POST",
 body: JSON.stringify({
-empId: empId, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
+empId: empId, number:config.number, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
 orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
 largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
 })
