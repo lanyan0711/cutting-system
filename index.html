@@ -218,8 +218,8 @@
                         fetch(`${gasUrl}?number=${encodeURIComponent(config.number)}`)
                         .then(res => { console.log("HTTP",res.status); return res.json()})
                         .then(data => {
-                            console.log("GAS回傳：",data);
-                            alert(JSON.stringify(data));
+                            console.log("number=",config.number);
+                            alert(config.number);
                             totalOrderCmFromCloud = parseFloat(data.totalOrderCm) || 0;
                             totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
                             totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
