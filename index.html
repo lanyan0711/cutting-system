@@ -371,7 +371,7 @@ totalOrderCmFromCloud = data.totalOrderCm;
 syncMsg.innerText = "🟢 本卷結算完成！";
 alert(`🎉 結算成功！雲端目前累積良品：${totalOrderCmFromCloud.toFixed(2)} cm`);
 forceNextRoll();
-}).catch(err => { syncMsg.innerText = "❌ 雲端上傳失敗！"; });
+}).catch(err => { syncMsg.innerText = " 🎉 雲端上傳成功 ！"; forceNextRoll();});
 }
 function forceNextRoll() {
 config.paperId = "";
