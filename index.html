@@ -114,7 +114,7 @@
 
     <div id="card-smallPcs" class="card normal">
         <div class="title" id="title-smallPcs">🌀 雲端【工單歷史總累計】小張-張數</div>
-        <div class="value"><span id="view-small">0.00</span> / <span id="lbl-show-smallPcs">0</span> <span class="unit">張</span></div>
+        <div class="value"><span id="view-small">0</span> / <span id="lbl-show-smallPcs">0</span> <span class="unit">張</span></div>
     </div>
 
     <div id="card-roll" class="card normal">
@@ -360,7 +360,7 @@ syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
 fetch(gasUrl, {
 method: "POST",
 body: JSON.stringify({
-empId: empId, number:config.number, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
+number:config.number, empId: empId, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
 orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
 largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
 })
