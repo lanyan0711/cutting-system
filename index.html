@@ -109,7 +109,7 @@
 
     <div id="card-largePcs" class="card normal">
         <div class="title" id="title-largePcs">🌀 雲端【工單歷史總累計】大張-張數</div>
-        <div class="value"><span id="view-large">0.00</span> / <span id="lbl-show-largePcs">0</span> <span class="unit">張</span></div>
+        <div class="value"><span id="view-large">0</span> / <span id="lbl-show-largePcs">0</span> <span class="unit">張</span></div>
     </div>
 
     <div id="card-smallPcs" class="card normal">
@@ -149,8 +149,8 @@
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
         let currentRollCm = 0.0;
-        let currentlargePcs = 0.0;
-        let currentSmallPcs = 0.0;
+        //let currentlargePcs = 0.0;
+        //let currentSmallPcs = 0.0;
 
         // ⚠️ 請填入您的 GAS 網址
         const gasUrl = "https://script.google.com/macros/s/AKfycbzXVqrGc-28IpZRAEsEAhrMut61VDm8hVHgiYQISk8E1D60OodAIu9L3eGRlG4b6gjISw/exec"; 
@@ -218,8 +218,8 @@
                         fetch(`${gasUrl}?number=${encodeURIComponent(config.number)}`)
                         .then(res => { console.log("HTTP",res.status); return res.json()})
                         .then(data => {
-                            console.log("number=",config.number);
-                            alert(config.number);
+                           // console.log("number=",config.number);
+                           // alert(config.number);
                             totalOrderCmFromCloud = parseFloat(data.totalOrderCm) || 0;
                             totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
                             totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
@@ -241,7 +241,7 @@
                         return;
                     }
                 }
-                alert("工單格式錯誤！應包含7個參數"); closeCamera(); return;
+                alert("工單格式錯誤！應包含8個參數"); closeCamera(); return;
             }
                             // 🌀 B. 掃描玻纖紙編號 (升級：掃完立刻去雲端查昨天有沒有人切過這卷)
             if (currentScanMode === 'paper') {
@@ -309,6 +309,11 @@ function calculateProgress() {
     let estLargeTotal = totalLargePcsFromCloud + largePcs;
     // 刷新單卷藍色看板的分子數字
     document.getElementById("view-large").innerText = estLargeTotal;
+
+    // 這樣換手機時，分子就會立刻跳出 大張張數 歷史進度了！
+    let estSmallTotal = totalSmallPcsFromCloud + smallPcs;
+    // 刷新單卷藍色看板的分子數字
+    document.getElementById("view-small").innerText = estSmallTotal;
 
     // 單卷原紙消耗規格即時比對
     let cardRoll = document.getElementById("card-roll");
