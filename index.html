@@ -356,7 +356,7 @@ function submitRollToCloud() {
         alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.totalRollUsed.toFixed(2)} cm) \n已經超過這卷玻纖紙的設定總長 (${config.targetRoll} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
         return; // 💡 關鍵死鎖：直接切斷程式，100% 傳不出去！
     }
-    
+
     let syncMsg = document.getElementById("sync-msg");
     syncMsg.style.display = "block";
     syncMsg.style.color = "#007bff"; // 確保一開始是藍色文字
@@ -406,18 +406,41 @@ function submitRollToCloud() {
     });
 }
 function resetAllOrder() {
-if (confirm("確定要重置目前的工單嗎？")) {
-config = { shipDate: '', fac:'', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0.0, paperId: '' };
-totalOrderCmFromCloud = 0.0;
-document.getElementById("lbl-date").innerText = "--";
-document.getElementById("lbl-fac").innerText ="--";
-document.getElementById("lbl-item").innerText = "--";
-document.getElementById("lbl-qty").innerText = "--";
-document.getElementById("lbl-tgt-order").innerText = "0";
-document.getElementById("lbl-spec-l").innerText = "0.00";
-document.getElementById("lbl-spec-s").innerText = "0.00";
-forceNextRoll();
+    if (confirm("確定要重置目前的工單嗎？")) {
+    config = { number:'', shipDate: '', fac:'', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0.0, paperId: '' };
+    totalOrderCmFromCloud = 0.0;
+    document.getElementById("forceNextRoll").innerText = "--";
+    document.getElementById("lbl-date").innerText = "--";
+    document.getElementById("lbl-fac").innerText ="--";
+    document.getElementById("lbl-item").innerText = "--";
+    document.getElementById("lbl-qty").innerText = "--";
+    document.getElementById("lbl-tgt-order").innerText = "0";
+    document.getElementById("lbl-spec-l").innerText = "0.00";
+    document.getElementById("lbl-spec-s").innerText = "0.00";
+    document.getElementById("lbl-show-largePcs").innerText = "0";
+    document.getElementById("lbl-show-smallPcs").innerText = "0";  
+    forceNextRoll();
+    }
 }
+// 🌀 換下一卷原紙程序：當舊原紙真正切完、換新的一卷上機時手動點擊
+function forceNextRoll() {
+    // 1. 核心安全重置：將舊原紙編號徹底清空
+    config.paperId = "";
+    
+    // 2. 將網頁畫面上的原紙編號字樣更正回「尚未掃描」
+    document.getElementById("lbl-paper-id").innerText = "尚未掃描";
+    
+    // 3. 將現場手動打字的大張、小張、NG輸入框全面清空變回 0
+    document.getElementById("input-large-pcs").value = "0";
+    document.getElementById("input-small-pcs").value = "0";
+    document.getElementById("input-ng-cm").value = "0";
+    
+    // 4. 🌟 關鍵記憶重置：把這卷紙歷史上累積的總公分數也歸零，好讓全新一卷從 0.00 cm 開始重新比對！
+    currentRollCm = 0.0;
+    
+    // 5. 重新觸發一次網頁進度與按鈕把關驗證
+    calculateProgress(); // 讓藍色看板的分子秒變回 0.00
+    validateForm();      // 💡 因為原紙編號被清空了，按鈕會自動非常聰明地重新鎖死變回「灰色」，強迫作業員下一卷上機前，必須「再掃描一次新的玻纖紙號碼」！
 }
 </script>
 
