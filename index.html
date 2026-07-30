@@ -357,6 +357,11 @@ function submitRollToCloud() {
         alert("請先輸入產出數據再點擊送出！"); 
         return; 
     }
+    // 🔒 終極強制作業攔截：只要總消耗大於原紙長度，直接死鎖，完全不准點送出！
+    if (res.totalRollUsed > config.targetRoll) {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.totalRollUsed.toFixed(2)} cm) \n已經超過這卷玻纖紙的設定總長 (${config.targetRoll} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
+        return; // 💡 關鍵死鎖：直接切斷程式，100% 傳不出去！
+    }
 
     let syncMsg = document.getElementById("sync-msg");
     syncMsg.style.display = "block";
