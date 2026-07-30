@@ -351,8 +351,10 @@ function submitRollToCloud() {
     let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
     let ngCm = document.getElementById("input-ng-cm").value;
     if (res.totalRollUsed === 0) { alert("請輸入張數數據再送出！"); return; }
-    if (res.totalRollUsed !== config.targetRoll) {
-    if (!confirm("⚠️ 警告：換算長度與玻纖紙單卷長度不符！是否確認送出？")) return;
+    // 🔒 終極強制作業攔截：只要總消耗大於原紙長度，直接死鎖，完全不准點送出！
+    if (res.totalRollUsed > config.targetRoll) {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.totalRollUsed.toFixed(2)} cm) \n已經超過這卷玻纖紙的設定總長 (${config.targetRoll} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
+        return; // 💡 關鍵死鎖：直接切斷程式，100% 傳不出去！
     }
     let syncMsg = document.getElementById("sync-msg");
     syncMsg.style.display = "block";
@@ -366,7 +368,7 @@ function submitRollToCloud() {
     })
     })
     .then(response => response.json())
-    .then(data => {
+        .then(data => {
             // 1. 🌟 接收雲端最新加總，即時刷新大盤紅藍看板
             totalOrderCmFromCloud  = parseFloat(data.totalOrderCm) || 0;
             totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
