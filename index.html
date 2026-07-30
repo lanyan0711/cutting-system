@@ -143,9 +143,9 @@
     <!-- 🌟 就是以下這段指令核心！這次絕對一字不漏，確保瀏覽器能讀到 openCamera 函數 🌟 -->
     <script>
         let config = { number: '',shipDate: '', item: '', fac:'', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0, paperId: '' };
-        let totalOrderCmFromCloud = 0.0; 
-        let totalLargePcsFromCloud = 0;
-        let totalSmallPcsFromCloud = 0;
+        let totalOrderCmFromCloud = 0.0;  //雲端-工單累積良品公分數
+        let totalLargePcsFromCloud = 0;   //雲端-工單大張張數
+        let totalSmallPcsFromCloud = 0;   //雲端-工單小張張數
         let currentScanMode = ""; 
         let html5QrcodeScanner = null;
         let currentRollCm = 0.0;
@@ -274,14 +274,14 @@
                 }
         }
 function onScanError(err) {}
-function validateForm() {
-let empId = document.getElementById("emp-id").value.trim();
-let btn = document.getElementById("btn-submit");
-if (empId !== "" && config.item !== "" && config.paperId !== "") {
-btn.disabled = false;
-} else {
-btn.disabled = true;
-}
+        function validateForm() {
+        let empId = document.getElementById("emp-id").value.trim();
+        let btn = document.getElementById("btn-submit");
+        if (empId !== "" && config.item !== "" && config.paperId !== "") {
+        btn.disabled = false;
+        } else {
+        btn.disabled = true;
+        }
 }
 // 🧮 修正後的單卷計算公式：【當前單卷總消耗 = 雲端此卷歷史已消耗 + 現場今天新切公分數】
 function calculateProgress() {
@@ -345,42 +345,52 @@ function calculateProgress() {
     return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
 }
 function submitRollToCloud() {
-let empId = document.getElementById("emp-id").value.trim();
-let res = calculateProgress();
-let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
-let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
-let ngCm = document.getElementById("input-ng-cm").value;
-if (res.totalRollUsed === 0) { alert("請輸入張數數據再送出！"); return; }
-if (res.totalRollUsed !== config.targetRoll) {
-if (!confirm("⚠️ 警告：換算長度與玻纖紙單卷長度不符！是否確認送出？")) return;
-}
-let syncMsg = document.getElementById("sync-msg");
-syncMsg.style.display = "block";
-syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
-fetch(gasUrl, {
-method: "POST",
-body: JSON.stringify({
-number:config.number, empId: empId, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
-orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
-largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
-})
-})
-.then(response => response.json())
-.then(data => {
-totalOrderCmFromCloud = data.totalOrderCm;
-syncMsg.innerText = "🟢 本卷結算完成！";
-alert(`🎉 結算成功！雲端目前累積良品：${totalOrderCmFromCloud.toFixed(2)} cm`);
-forceNextRoll();
-}).catch(err => { syncMsg.innerText = " 🎉 雲端上傳成功 ！"; calculateProgress();});
-}
-function forceNextRoll() {
-config.paperId = "";
-document.getElementById("lbl-paper-id").innerText = "尚未掃描";
-document.getElementById("input-large-pcs").value = "0";
-document.getElementById("input-small-pcs").value = "0";
-document.getElementById("input-ng-cm").value = "0";
-validateForm();
-calculateProgress();
+    let empId = document.getElementById("emp-id").value.trim();
+    let res = calculateProgress();
+    let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
+    let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
+    let ngCm = document.getElementById("input-ng-cm").value;
+    if (res.totalRollUsed === 0) { alert("請輸入張數數據再送出！"); return; }
+    if (res.totalRollUsed !== config.targetRoll) {
+    if (!confirm("⚠️ 警告：換算長度與玻纖紙單卷長度不符！是否確認送出？")) return;
+    }
+    let syncMsg = document.getElementById("sync-msg");
+    syncMsg.style.display = "block";
+    syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
+    fetch(gasUrl, {
+    method: "POST",
+    body: JSON.stringify({
+    number:config.number, empId: empId, shipDate: config.shipDate, fac:config.fac, item: config.item, qty: config.qty,
+    orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
+    largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
+    })
+    })
+    .then(response => response.json())
+    .then(data => {
+            // 1. 🌟 接收雲端最新加總，即時刷新大盤紅藍看板
+            totalOrderCmFromCloud  = parseFloat(data.totalOrderCm) || 0;
+            totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
+            totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
+
+            syncMsg.style.color = "#28a745";
+            syncMsg.innerText = "🟢 分批數據上傳成功！已鎖定並累積至大盤。";
+
+            // 2. 🌟 產線續切最重要關鍵：只把手機輸入框歸零（方便下午重新打字）
+            // 絕對不要去寫 config.item = "" 或 config.paperId = "" ！！！
+            document.getElementById("input-large-pcs").value = "0";
+            document.getElementById("input-small-pcs").value = "0";
+            document.getElementById("input-ng-cm").value = "0";
+
+            // 3. 🌟 呼叫這兩行，強迫網頁刷新看板，並維持按鈕隨時可以點擊的藍色狀態！
+            calculateProgress(); // 刷新藍色看板分子
+            validateForm();      // 💡 重新檢查，因為工單與紙號都在，按鈕會百分之百維持藍色！
+
+            alert(`🎉 分批進度結算成功！\n目前工單歷史總累計已達到：${totalOrderCmFromCloud.toFixed(2)} cm`);
+        })
+        .catch(err => {
+            syncMsg.style.color = "#dc3545";
+            syncMsg.innerText = "❌ 雲端上傳失敗，請檢查網路 Wi-Fi！";
+        });
 }
 function resetAllOrder() {
 if (confirm("確定要重置目前的工單嗎？")) {
