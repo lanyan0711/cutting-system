@@ -344,65 +344,81 @@ function calculateProgress() {
 
     return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
 }
+// 💾 【隨切隨傳、背景自動對帳刷新版】
 function submitRollToCloud() {
     let empId = document.getElementById("emp-id").value.trim();
     let res = calculateProgress();
+    
     let largePcs = parseInt(document.getElementById("input-large-pcs").value) || 0;
     let smallPcs = parseInt(document.getElementById("input-small-pcs").value) || 0;
-    let ngCm = document.getElementById("input-ng-cm").value;
-    if (res.totalRollUsed === 0) { alert("請輸入張數數據再送出！"); return; }
-    // 🔒 終極強制作業攔截：只要總消耗大於原紙長度，直接死鎖，完全不准點送出！
-    if (res.totalRollUsed > config.targetRoll) {
-        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.totalRollUsed.toFixed(2)} cm) \n已經超過這卷玻纖紙的設定總長 (${config.targetRoll} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
-        return; // 💡 關鍵死鎖：直接切斷程式，100% 傳不出去！
+    let ngCm     = parseFloat(document.getElementById("input-ng-cm").value) || 0;
+
+    if (largePcs === 0 && smallPcs === 0 && ngCm === 0) { 
+        alert("請先輸入產出數據再點擊送出！"); 
+        return; 
     }
 
     let syncMsg = document.getElementById("sync-msg");
     syncMsg.style.display = "block";
-    syncMsg.style.color = "#007bff"; // 確保一開始是藍色文字
-    syncMsg.innerText = "☁️ 正在上傳數據至雲端資料庫...";
+    syncMsg.style.color = "#007bff";
+    syncMsg.innerText = "☁️ 正在即時將最新進度發送至雲端資料庫...";
 
+    // 🌟 發送最新一筆分批數據
     fetch(gasUrl, {
         method: "POST",
-        mode: "no-cors", // 🌟 【就是這行！核心修復】強制開啟免對帳模式，解鎖瀏覽器攔截限制！
+        mode: "no-cors", // 保持高速免阻斷模式
         body: JSON.stringify({
             number: config.number, empId: empId, shipDate: config.shipDate, fac: config.fac, item: config.item, qty: config.qty,
             orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
             largePcs: largePcs, smallPcs: smallPcs, ngCm: ngCm, goodCm: res.currentRollGoodCm
         })
     })
-    // 🌟 核心優化：因為開啟了 no-cors 模式，瀏覽器不再讀取回傳值，我們直接讓它無條件執行「成功程序」！
     .then(() => {
-        // 1. 介面亮起綠燈，提示同步成功
+        // 1. 畫面上先亮起綠色提示
         syncMsg.style.color = "#28a745";
-        syncMsg.innerText = "🟢 分批數據上傳成功！已鎖定並累積至大盤。";
+        syncMsg.innerText = "🟢 分批數據上傳成功！正在即時刷新大盤與單卷進度...";
 
-        // 2. 產線續切關鍵：清空輸入框，保留大腦記憶
+        // 2. 產線續切必備：將手動打字的輸入框清空變回 0，方便下一批重新打字
         document.getElementById("input-large-pcs").value = "0";
         document.getElementById("input-small-pcs").value = "0";
         document.getElementById("input-ng-cm").value = "0";
 
-        // 3. 刷新看板，維持按鈕藍色亮起
-        calculateProgress(); 
-        validateForm();      
-
-        // 4. 🌟 主動跟雲端重新要一次最新大盤，確保紅色看板跨日、多人同步更新！
-        fetch(`${gasUrl}?number=${encodeURIComponent(String(config.number))}`)
-        .then(res => res.json())
-        .then(data => {
-            totalOrderCmFromCloud  = parseFloat(data.totalOrderCm) || 0;
-            totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
-            totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
-            calculateProgress(); // 刷新紅色看板大盤總和
-        }).catch(e => console.log("背景更新大盤稍有延遲"));
-
-        // 彈出成功提示
-        alert("🎉 分批進度結算成功！\n數據已即時同步寫入雲端試算表大表。");
+        // 🌟 3. 【破案關鍵大絕招】：網頁自己在背景「自動重新連線 Google」！
+        // 主動出擊！完全不需要人工去手動重新刷條碼！
+        
+        // (連線 A)：用目前同一個 paperId 重新去雲端撈取剛剛加上去之後的【最新單卷總消耗量】
+        fetch(`${gasUrl}?paperId=${encodeURIComponent(config.paperId)}`)
+        .then(response => response.json())
+        .then(paperData => {
+            // 💡 讓大腦變數 currentRollCm 完美吃下包含剛剛送出後的「最新雲端總消耗」！
+            currentRollCm = parseFloat(paperData.totalPaperUsedCm) || 0;
+            
+            // (連線 B)：同時，用目前同一個工單編號重新去雲端撈取【最新工單大盤總累積】
+            return fetch(`${gasUrl}?number=${encodeURIComponent(String(config.number))}`);
+        })
+        .then(response => response.json())
+        .then(orderData => {
+            // 💡 讓大盤的三個歷史計數器也同步更新！
+            totalOrderCmFromCloud  = parseFloat(orderData.totalOrderCm) || 0;
+            totalLargePcsFromCloud = parseInt(orderData.totalLargePcs) || 0;
+            totalSmallPcsFromCloud = parseInt(orderData.totalSmallPcs) || 0;
+            
+            // 🌟 4. 所有最新雲端數據都安全到齊後，一鍵強迫網頁重新計算渲染！
+            calculateProgress(); 
+            validateForm();      // 維持按鈕隨時可以點擊的藍色狀態
+            
+            // 提示視窗，此時大盤與單卷分子都已經同步在背景加好了
+            alert(`🎉 進度即時結算成功！\n目前此卷玻纖紙已總共消耗：${currentRollCm.toFixed(2)} cm\n工單大盤累積良品：${totalOrderCmFromCloud.toFixed(2)} cm`);
+        })
+        .catch(err => {
+            // 如果背景查詢因為 Google 稍有延遲，依然執行本地端預估重新整理，防死鎖
+            calculateProgress();
+            validateForm();
+        });
     })
     .catch(err => {
-        console.error(err);
         syncMsg.style.color = "#dc3545";
-        syncMsg.innerText = "❌ 網路發射失敗，請核對 Wi-Fi 狀態！";
+        syncMsg.innerText = "❌ 網路連線失敗，請檢查 Wi-Fi 訊號！";
     });
 }
 function resetAllOrder() {
@@ -410,6 +426,7 @@ function resetAllOrder() {
     config = { number:'', shipDate: '', fac:'', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0.0, paperId: '' };
     totalOrderCmFromCloud = 0.0;
     document.getElementById("forceNextRoll").innerText = "--";
+    document.getElementById("lab-number").innerText = "--";
     document.getElementById("lbl-date").innerText = "--";
     document.getElementById("lbl-fac").innerText ="--";
     document.getElementById("lbl-item").innerText = "--";
@@ -424,6 +441,8 @@ function resetAllOrder() {
 }
 // 🌀 換下一卷原紙程序：當舊原紙真正切完、換新的一卷上機時手動點擊
 function forceNextRoll() {
+
+    alert("🎉 換下一卷原紙");
     // 1. 核心安全重置：將舊原紙編號徹底清空
     config.paperId = "";
     
@@ -434,6 +453,7 @@ function forceNextRoll() {
     document.getElementById("input-large-pcs").value = "0";
     document.getElementById("input-small-pcs").value = "0";
     document.getElementById("input-ng-cm").value = "0";
+    document.getElementById("input-roll-target").value = "0";
     
     // 4. 🌟 關鍵記憶重置：把這卷紙歷史上累積的總公分數也歸零，好讓全新一卷從 0.00 cm 開始重新比對！
     currentRollCm = 0.0;
