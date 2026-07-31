@@ -465,6 +465,9 @@ function forceNextRoll() {
     
     // 4. 🌟 關鍵記憶重置：把這卷紙歷史上累積的總公分數也歸零，好讓全新一卷從 0.00 cm 開始重新比對！
     currentRollCm = 0.0;
+    currentRollTotalUsed = 0.0;
+    estLargeTotal = 0;
+    estSmallTotal = 0;
     
     // 5. 重新觸發一次網頁進度與按鈕把關驗證
     calculateProgress(); // 讓藍色看板的分子秒變回 0.00
