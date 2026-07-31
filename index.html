@@ -431,6 +431,7 @@ function submitRollToCloud() {
     });
 }
 function resetAllOrder() {
+    alert("有進入resetAllOrder");
     if (confirm("確定要重置目前的工單嗎？")) {
     config = { number:'', shipDate: '', fac:'', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0.0, paperId: '' };
     totalOrderCmFromCloud = 0.0;
@@ -445,7 +446,7 @@ function resetAllOrder() {
     document.getElementById("lbl-spec-s").innerText = "0.00";
     document.getElementById("lbl-show-largePcs").innerText = "0";
     document.getElementById("lbl-show-smallPcs").innerText = "0";  
-    forceNextRoll();
+    //forceNextRoll();
     }
 }
 // 🌀 換下一卷原紙程序：當舊原紙真正切完、換新的一卷上機時手動點擊
