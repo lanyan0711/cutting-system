@@ -20,9 +20,10 @@
         .finish { border-left: 8px solid #dc3545; background-color: #ffebee; }
         .ng-card { border-left: 8px solid #6c757d; background-color: #f8f9fa; }
 
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
+        @media(min-width:480px){ .grid-inputs{grid-template-columns: 1fr 1fr;}}
         .input-box { display: flex; flex-direction: column; font-size: 13px; font-weight: bold; color: #333; }
-        .input-box input { font-size: 18px; padding: 8px; text-align: center; border: 2px solid #ccc; border-radius: 6px; margin-top: 4px; box-sizing: border-box; }
+        .input-box input { font-size: 18px; paddinsss
         .input-box input:focus { border-color: #007bff; outline: none; }
 
         .btn-action { width: 100%; font-size: 16px; font-weight: bold; padding: 10px; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 5px; }
@@ -431,7 +432,7 @@ function resetAllOrder() {
     config = { number:'', shipDate: '', fac:'', item: '', qty: 0, targetOrder: 0, largeCm: 0, smallCm: 0, targetRoll: 0.0, paperId: '' };
     totalOrderCmFromCloud = 0.0;
     document.getElementById("forceNextRoll").innerText = "--";
-    document.getElementById("lab-number").innerText = "--";
+    document.getElementById("lbl-number").innerText = "--";
     document.getElementById("lbl-date").innerText = "--";
     document.getElementById("lbl-fac").innerText ="--";
     document.getElementById("lbl-item").innerText = "--";
@@ -447,7 +448,6 @@ function resetAllOrder() {
 // 🌀 換下一卷原紙程序：當舊原紙真正切完、換新的一卷上機時手動點擊
 function forceNextRoll() {
 
-    alert("🎉 換下一卷原紙");
     // 1. 核心安全重置：將舊原紙編號徹底清空
     config.paperId = "";
     
