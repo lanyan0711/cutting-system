@@ -348,7 +348,8 @@ function calculateProgress() {
 
     return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
 }
-// 💾 【隨切隨傳、背景自動對帳刷新版】
+
+// 💾 【功能】：接收產線點擊結算，寫入大表，並以極速 SQL 合併查詢刷新
 function submitRollToCloud() {
     let empId = document.getElementById("emp-id").value.trim();
     let res = calculateProgress();
@@ -361,15 +362,18 @@ function submitRollToCloud() {
         alert("請先輸入產出數據再點擊送出！"); 
         return; 
     }
-    // 🔒 終極強制作業攔截：只要總消耗大於原紙長度，直接死鎖，完全不准點送出！
+    
+    // 🔒 終極強制作業攔截 1：只要總消耗大於原紙長度，直接死鎖，完全不准點送出！
     if (res.totalRollUsed > config.targetRoll) {
         alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.totalRollUsed.toFixed(2)} cm) \n已經超過這卷玻纖紙的設定總長 (${config.targetRoll} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
-        return; // 💡 關鍵死鎖：直接切斷程式，100% 傳不出去！
+        return; 
     }
-    // 🔒 在上傳的前一刻進行硬性攔截
-    if (res.estimatedOrderTotal >= config.targetOrder ) {
-        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estimatedOrderTotal.toFixed(2)} cm) \n已經超過此工單的設定總長 (${config.targetOrder} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
-        return; // 這裡的 return 才能真正阻止資料送去雲端資料庫！
+    
+    // 🔒 終極強制作業攔截 2：安全加固版工單攔截（防止 res.estimatedOrderTotal 為 undefined 的 Bug）
+    let estOrderTotal = res.estimatedOrderTotal || (totalOrderCmFromCloud + (largePcs * config.largeCm) + (smallPcs * config.smallCm));
+    if (estOrderTotal >= config.targetOrder && config.targetOrder > 0) {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${estOrderTotal.toFixed(2)} cm) \n已經超過此工單的設定總長 (${config.targetOrder} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
+        return; 
     }
 
     let syncMsg = document.getElementById("sync-msg");
@@ -380,7 +384,7 @@ function submitRollToCloud() {
     // 🌟 發送最新一筆分批數據
     fetch(gasUrl, {
         method: "POST",
-        mode: "no-cors", // 保持高速免阻斷模式
+        mode: "no-cors", 
         body: JSON.stringify({
             number: config.number, empId: empId, shipDate: config.shipDate, fac: config.fac, item: config.item, qty: config.qty,
             orderTarget: config.targetOrder, paperId: config.paperId, rollTarget: config.targetRoll,
@@ -389,39 +393,45 @@ function submitRollToCloud() {
     })
     .then(() => {
         syncMsg.style.color = "#28a745";
-        syncMsg.innerText = "🟢 分批數據上傳成功！正在極速刷新大盤與單卷進度...";
+        syncMsg.innerText = "🟢 分批數據上傳成功！正在利用 SQL 引擎極速刷新大盤與單卷進度...";
 
-        // 自動將今天輸入框清空變回 0，方便下午重新打字
+        // 自動將今天輸入框清空變回 0
         document.getElementById("input-large-pcs").value = "0";
         document.getElementById("input-small-pcs").value = "0";
         document.getElementById("input-ng-cm").value = "0";
 
-        // 🌟 【極速核心優化】：用 Promise.all 讓兩個 fetch 網址在背景同時並聯出發，不用排隊！
-        Promise.all([
-            fetch(`${gasUrl}?paperId=${encodeURIComponent(config.paperId)}`).then(res => res.json()),
-            fetch(`${gasUrl}?number=${encodeURIComponent(String(config.number))}`).then(res => res.json())
-        ])
-        .then(([paperData, orderData]) => {
-            // 1. 同時接住回傳的兩大包裹
-            currentRollCm = parseFloat(paperData.totalPaperUsedCm) || 0;
-            
-            totalOrderCmFromCloud  = parseFloat(orderData.totalOrderCm) || 0;
-            totalLargePcsFromCloud = parseInt(orderData.totalLargePcs) || 0;
-            totalSmallPcsFromCloud = parseInt(orderData.totalSmallPcs) || 0;
-            
-            // 2. 所有數據瞬間到位，強迫網頁渲染刷新！
-            calculateProgress(); 
-            validateForm();      
-            
-            alert(`🎉 分批進度結算成功！\n目前此卷玻纖紙已總共消耗：${currentRollCm.toFixed(2)} cm\n工單大盤累積良品：${totalOrderCmFromCloud.toFixed(2)} cm`);
-        })
-        .catch(err => {
-            console.error("背景刷新稍有延遲", err);
-            calculateProgress();
-            validateForm();
-        });
+        // ==========================================
+        // 🚀 【真・極速核心優化】：捨棄 Promise.all，改用單一 URL 同時攜帶雙參數
+        // ==========================================
+        let combinedUrl = `${gasUrl}?paperId=${encodeURIComponent(config.paperId)}&number=${encodeURIComponent(String(config.number))}`;
+        
+        fetch(combinedUrl)
+            .then(response => response.json())
+            .then(data => {
+                // 1. 從 SQL 的合併結果包中，各自解開對應欄位
+                let paperData = data.paperResult;
+                let orderData = data.numberResult;
+
+                currentRollCm = parseFloat(paperData.totalPaperUsedCm) || 0;
+                
+                totalOrderCmFromCloud  = parseFloat(orderData.totalOrderCm) || 0;
+                totalLargePcsFromCloud = parseInt(orderData.totalLargePcs) || 0;
+                totalSmallPcsFromCloud = parseInt(orderData.totalSmallPcs) || 0;
+                
+                // 2. 所有數據瞬間到位，強迫網頁渲染刷新！
+                calculateProgress(); 
+                validateForm();      
+                
+                alert(`🎉 分批進度結算成功！\n目前此卷玻纖紙已總共消耗：${currentRollCm.toFixed(2)} cm\n工單大盤累積良品：${totalOrderCmFromCloud.toFixed(2)} cm`);
+            })
+            .catch(err => {
+                console.error("背景 SQL 刷新稍有延遲", err);
+                calculateProgress();
+                validateForm();
+            });
     })
 }
+
 function resetAllOrder() {
     if (!confirm("確定要重新開始新工單嗎？")) return;
 
