@@ -367,7 +367,7 @@ function submitRollToCloud() {
         return; // 💡 關鍵死鎖：直接切斷程式，100% 傳不出去！
     }
     // 🔒 在上傳的前一刻進行硬性攔截
-    if (res.estimatedOrderTotal >= config.targetOrder && config.targetOrder > 0) {
+    if (res.estimatedOrderTotal >= config.targetOrder ) {
         alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estimatedOrderTotal.toFixed(2)} cm) \n已經超過此工單的設定總長 (${config.targetOrder} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
         return; // 這裡的 return 才能真正阻止資料送去雲端資料庫！
     }
