@@ -183,110 +183,128 @@
             }
         }
 
-        function onScanSuccess(decodedText) {
-            let syncMsg = document.getElementById("sync-msg");
-            
-            // ✅ 請核對並將 index.html 裡的工單 fetch 區塊修改為這段正確寫法：
-            if (currentScanMode === 'order') {
-                if (decodedText.includes(",")) {
-                    let parts = decodedText.split(",");
-                    if (parts.length === 8) {
-                        config.number = parts[0].trim();
-                        config.shipDate = parts[1].trim();
-                        config.fac = parts[2].trim();
-                        config.item = parts[3].trim();
-                        config.qty = parseInt(parts[4].trim()) || 0;
-                        config.targetOrder = parseFloat(parts[5].trim()) || 0;
-                        config.largeCm = parseFloat(parts[6].trim()) || 0;
-                        config.smallCm = parseFloat(parts[7].trim()) || 0;
-                        
-                        document.getElementById("lbl-number").innerText = config.number;
-                        document.getElementById("lbl-date").innerText = config.shipDate;
-                        document.getElementById("lbl-fac").innerText = config.fac;
-                        document.getElementById("lbl-item").innerText = config.item;
-                        document.getElementById("lbl-qty").innerText = config.qty;
-                        document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
-                        document.getElementById("lbl-spec-l").innerText = config.largeCm;
-                        document.getElementById("lbl-spec-s").innerText = config.smallCm;
-                        document.getElementById("lbl-show-order").innerText = config.targetOrder;
-                        
-                        closeCamera();
-                        
-                        let syncMsg = document.getElementById("sync-msg");
-                        syncMsg.style.display = "block";
-                        syncMsg.style.color = "#007bff"; // 預設藍色
-                        syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
-                        
-                        // 🌟 核心修正：發送四條件查詢
-                        //fetch(`${gasUrl}?item=${encodeURIComponent(String(config.item))}&shipDate=${encodeURIComponent(String(config.shipDate))}&fac=${encodeURIComponent(String(config.fac))}&qty=${encodeURIComponent(String(config.qty))}`)
-                        fetch(`${gasUrl}?number=${encodeURIComponent(config.number)}`)
-                        .then(res => { console.log("HTTP",res.status); return res.json()})
-                        .then(data => {
-                           // console.log("number=",config.number);
-                           // alert(config.number);
-                            totalOrderCmFromCloud = parseFloat(data.totalOrderCm) || 0;
-                            totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
-                            totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
-                            calculateProgress();
-                            // 🌟 核心防錯：工單連線成功時，強制換成綠色字體，並完美鎖定！
-                            syncMsg.style.color = "#28a745";
-                            syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
-                            
-                            // 🌟 最關鍵修正：把檢查欄位鎖定按鈕的動作，搬到「雲端回傳成功之後」才執行，防止提早誤報失敗！
-                            validateForm(); 
-                        })
-                        .catch(err => { 
-                            console.error(err);
-                            alert(err);
-                            syncMsg.style.color = "#ff9800"; // 只有在真的斷線或沒資料時，才亮起黃色警告
-                            syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; 
-                            validateForm();
-                        });
-                        return;
-                    }
-                }
-                alert("工單格式錯誤！應包含8個參數"); closeCamera(); return;
-            }
-                            // 🌀 B. 掃描玻纖紙編號 (升級：掃完立刻去雲端查昨天有沒有人切過這卷)
-            if (currentScanMode === 'paper') {
-                config.paperId = decodedText.trim();
-                document.getElementById("lbl-paper-id").innerText = config.paperId;
+function onScanSuccess(decodedText) {
+    let syncMsg = document.getElementById("sync-msg");
+    
+    // ========================================================
+    // 📋 A. 掃描工單區塊
+    // ========================================================
+    if (currentScanMode === 'order') {
+        if (decodedText.includes(",")) {
+            let parts = decodedText.split(",");
+            if (parts.length === 8) {
+                config.number = parts[0].trim();
+                config.shipDate = parts[1].trim();
+                config.fac = parts[2].trim();
+                config.item = parts[3].trim();
+                config.qty = parseInt(parts[4].trim()) || 0;
+                config.targetOrder = parseFloat(parts[5].trim()) || 0;
+                config.largeCm = parseFloat(parts[6].trim()) || 0;
+                config.smallCm = parseFloat(parts[7].trim()) || 0;
+                
+                document.getElementById("lbl-number").innerText = config.number;
+                document.getElementById("lbl-date").innerText = config.shipDate;
+                document.getElementById("lbl-fac").innerText = config.fac;
+                document.getElementById("lbl-item").innerText = config.item;
+                document.getElementById("lbl-qty").innerText = config.qty;
+                document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
+                document.getElementById("lbl-spec-l").innerText = config.largeCm;
+                document.getElementById("lbl-spec-s").innerText = config.smallCm;
+                document.getElementById("lbl-show-order").innerText = config.targetOrder;
+                
                 closeCamera();
                 
-                let syncMsg = document.getElementById("sync-msg");
                 syncMsg.style.display = "block";
-                syncMsg.innerText = "🔍 正在查詢此卷玻纖紙的跨日歷史剩餘長度...";
+                syncMsg.style.color = "#007bff"; // 預設連線查詢藍色
+                syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
                 
-                // 飛去雲端用 paperId 查這卷紙被用掉多少公分
-                fetch(`${gasUrl}?paperId=${encodeURIComponent(config.paperId)}`)
-                .then(res => res.json())
+                // 🚀 各別掃描：單查工單模式
+                fetch(`${gasUrl}?number=${encodeURIComponent(config.number)}`)
+                .then(res => { console.log("HTTP", res.status); return res.json(); })
                 .then(data => {
-                    // 🌟 核心記憶復活：把這卷紙過去被用掉的總長度，直接載入當作基礎進度！
-                    currentRollCm = data.totalPaperUsedCm;
+                    totalOrderCmFromCloud = parseFloat(data.totalOrderCm) || 0;
+                    totalLargePcsFromCloud = parseInt(data.totalLargePcs) || 0;
+                    totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
                     
-                    calculateProgress(); // 觸發即時計算與換算
-                    syncMsg.innerText = `🟢 玻纖紙連線成功！這卷原紙歷史已消耗：${currentRollCm.toFixed(2)} cm`;
-                    validateForm();
-                })
-                .catch(err => {
-                    currentRollCm = 0.0;
                     calculateProgress();
-                    syncMsg.innerText = "⚠️ 查詢失敗，此卷原紙將由 0 開始計算。";
+                    
+                    // 🌟 核心防錯：工單連線成功時，強制換成綠色字體！
+                    syncMsg.style.color = "#28a745";
+                    syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
+                    
+                    validateForm(); // 雲端回傳成功後，才檢查按鈕解鎖
+                })
+                .catch(err => { 
+                    console.error(err);
+                    alert("工單讀取異常: " + err);
+                    syncMsg.style.color = "#ff9800"; // 斷線或異常時，亮起橘黃色警告
+                    syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; 
                     validateForm();
                 });
                 return;
-                }
+            }
         }
-function onScanError(err) {}
-        function validateForm() {
-        let empId = document.getElementById("emp-id").value.trim();
-        let btn = document.getElementById("btn-submit");
-        if (empId !== "" && config.item !== "" && config.paperId !== "") {
-        btn.disabled = false;
-        } else {
-        btn.disabled = true;
-        }
+        alert("工單格式錯誤！應包含8個參數"); closeCamera(); return;
+    }
+    
+    // ========================================================
+    // 🌀 B. 掃描玻纖紙編號 (各別掃描原紙模式)
+    // ========================================================
+    if (currentScanMode === 'paper') {
+        config.paperId = decodedText.trim();
+        document.getElementById("lbl-paper-id").innerText = config.paperId;
+        closeCamera();
+        
+        syncMsg.style.display = "block";
+        syncMsg.style.color = "#007bff"; // 預設連線查詢藍色
+        syncMsg.innerText = "🔍 正在查詢此卷玻纖紙的跨日歷史剩餘長度...";
+        
+        // 🚀 各別掃描：單查原紙模式
+        fetch(`${gasUrl}?paperId=${encodeURIComponent(config.paperId)}`)
+        .then(res => res.json())
+        .then(data => {
+            // 🌟 終極安全護欄：加上 parseFloat 與 || 0，徹底消滅全新紙張會引發的 NaN 錯誤！
+            currentRollCm = parseFloat(data.totalPaperUsedCm) || 0.0;
+            
+            calculateProgress(); // 觸發即時計算與換算
+            
+            // 🌟 優化：將字體更換為成功綠色
+            syncMsg.style.color = "#28a745";
+            syncMsg.innerText = `🟢 玻纖紙連線成功！這卷原紙歷史已消耗：${currentRollCm.toFixed(2)} cm`;
+            
+            validateForm(); // 雲端回傳成功後，才檢查按鈕解鎖
+        })
+        .catch(err => {
+            console.error(err);
+            currentRollCm = 0.0;
+            calculateProgress();
+            
+            // 🌟 優化：將字體更換為警告橘色
+            syncMsg.style.color = "#ff9800";
+            syncMsg.innerText = "⚠️ 查詢失敗，此卷原紙將由 0 開始計算。";
+            validateForm();
+        });
+        return;
+    }
 }
+
+function onScanError(err) {}
+
+// ========================================================
+// 🔒 表單必填欄位驗證與送出按鈕鎖定控制
+// ========================================================
+function validateForm() {
+    let empId = document.getElementById("emp-id").value.trim();
+    let btn = document.getElementById("btn-submit");
+    
+    // 💡 提示：config.item 通常在掃完工單後會被填入
+    if (empId !== "" && config.item !== "" && config.paperId !== "") {
+        btn.disabled = false; // 通過檢查，解除鎖定，允許點擊送出
+    } else {
+        btn.disabled = true;  // 只要少一樣，按鈕反灰鎖死
+    }
+}
+
 // 🧮 修正後的單卷計算公式：【當前單卷總消耗 = 雲端此卷歷史已消耗 + 現場今天新切公分數】
 function calculateProgress() {
     let rollTarget = parseFloat(document.getElementById("input-roll-target").value) * 100 || 0; // 如果您有輸入 450 自動換算 45000 的話
