@@ -213,6 +213,14 @@ function onScanSuccess(decodedText) {
                 document.getElementById("lbl-show-order").innerText = config.targetOrder;
                 
                 closeCamera();
+
+                // 🌟 【就是這裡！破案防呆鎖】 🌟
+                        // 如果 config.number 還是空白的，代表大腦還沒存好，強制原地攔截，絕對不准去背景亂查！
+                        if (!config.number || config.number.trim() === "") {
+                            console.log("⚠️ 提示：工單編號解析中，暫緩背景反查");
+                            validateForm();
+                            return; // 💡 轉身離開，100% 杜絕空白網址發射！
+                        }
                 
                 syncMsg.style.display = "block";
                 syncMsg.style.color = "#007bff"; // 預設連線查詢藍色
