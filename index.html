@@ -70,9 +70,9 @@
             <div>廠區：<span id="lbl-fac" style="font-weight:bold;">--</span></div>
             <div>品號：<span id="lbl-item" style="font-weight:bold; color:#007bff;">--</span></div>
             <div>數量：<span id="lbl-qty" style="font-weight:bold;">--</span></div>
-            <div>工單長度：<span id="lbl-tgt-order" style="font-weight:bold; color:#dc3545;">0</span> cm</div>
-            <div>大張規格：<span id="lbl-spec-l" style="font-weight:bold;">0.00</span> cm</div>
-            <div>小張規格：<span id="lbl-spec-s" style="font-weight:bold;">0.00</span> cm</div>
+            <div>工單用量：<span id="lbl-tgt-order" style="font-weight:bold; color:#dc3545;">0</span> cm</div>
+            <div>大張規格(長度)：<span id="lbl-spec-l" style="font-weight:bold;">0.00</span> cm</div>
+            <div>小張規格(長度)：<span id="lbl-spec-s" style="font-weight:bold;">0.00</span> cm</div>
         </div>
     </div>
 
@@ -107,7 +107,7 @@
             </div>
         </div>
         
-        <button class="btn-main" id="btn-submit" onclick="submitRollToCloud()" disabled>💾 本卷切完，確認送出結算</button>
+        <button class="btn-main" id="btn-submit" onclick="submitRollToCloud()" disabled>💾 確認送出結算</button>
         <div id="sync-msg" class="sync-status" style="display:none;">🟡 等待開工設定...</div>
     </div>
 
@@ -133,8 +133,8 @@
 
     <div class="card">
         <div class="btn-group">
-            <button class="btn-sub" onclick="forceNextRoll()" style="background-color: #ff9800; font-weight: bold;">🔄 換下一卷原紙 (單卷歸零)</button>
-            <button class="btn-sub" onclick="resetAllOrder()">⚠️ 重新開始新工單</button>
+            <button class="btn-sub" onclick="forceNextRoll()" style="background-color: #ff9800; font-weight: bold;">🔄 換下一卷 (單卷歸零)</button>
+            <button class="btn-sub" onclick="resetAllOrder()">⚠️ 開始新工單</button>
         </div>
     </div>
 
@@ -211,6 +211,8 @@ function onScanSuccess(decodedText) {
                 document.getElementById("lbl-spec-l").innerText = config.largeCm;
                 document.getElementById("lbl-spec-s").innerText = config.smallCm;
                 document.getElementById("lbl-show-order").innerText = config.targetOrder;
+                document.getElementById("lbl-show-largePcs").innerText = config.qty;
+                document.getElementById("lbl-show-smallPcs").innerText = config.qyt;
                 
                 closeCamera();
 
@@ -340,7 +342,7 @@ function calculateProgress() {
     // 刷新單卷藍色看板的分子數字
     document.getElementById("view-large").innerText = estLargeTotal;
 
-    // 這樣換手機時，分子就會立刻跳出 大張張數 歷史進度了！
+    // 這樣換手機時，分子就會立刻跳出 小張張數 歷史進度了！
     let estSmallTotal = totalSmallPcsFromCloud + smallPcs;
     // 刷新單卷藍色看板的分子數字
     document.getElementById("view-small").innerText = estSmallTotal;
@@ -399,6 +401,18 @@ function submitRollToCloud() {
     let estOrderTotal = res.estimatedOrderTotal || (totalOrderCmFromCloud + (largePcs * config.largeCm) + (smallPcs * config.smallCm));
     if (estOrderTotal >= config.targetOrder && config.targetOrder > 0) {
         alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${estOrderTotal.toFixed(2)} cm) \n已經超過此工單的設定總長 (${config.targetOrder} cm)！\n\n系統已強制攔截，不允許上傳。請產線核對張數或原紙規格！`);
+        return; 
+    }
+
+    if(res.estLargeTotal > config.qty)
+    {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estLargeTotal.toFixed(2)} 張) \n大張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
+        return; 
+    }
+
+    if(res.estSmallTotal > config.qty)
+    {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estSmallTotal.toFixed(2)} 張) \n小張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
         return; 
     }
 
