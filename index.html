@@ -374,7 +374,7 @@ function calculateProgress() {
         cardOrder.className = "card normal";
     }
 
-    return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed };
+    return { currentRollGoodCm: currentRollGoodCm, totalRollUsed: currentRollTotalUsed , estLargeTotal: estLargeTotal , estSmallTotal: estSmallTotal};
 }
 
 // 💾 【功能】：接收產線點擊結算，寫入大表，並以極速 SQL 合併查詢刷新
@@ -404,15 +404,18 @@ function submitRollToCloud() {
         return; 
     }
 
-    if(res.estLargeTotal > config.qty || largePcs > config.qty)
-    {
-        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estLargeTotal.toFixed(2)} 張) \n大張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
+    // 🔒 終極強制作業攔截 3：【完美修復】大張超量死鎖
+    // 用 parseInt 強制將大腦數值轉為純整數進行對帳
+    let currentEstLarge = parseInt(res.estLargeTotal) || (totalLargePcsFromCloud + largePcs);
+    if (currentEstLarge > config.qty) {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${currentEstLarge} 張) \n大張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
         return; 
     }
 
-    if(res.estSmallTotal > config.qty || smallPcs > config.qty)
-    {
-        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estSmallTotal.toFixed(2)} 張) \n小張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
+    // 🔒 終極強制作業攔截 4：【完美修復】小張超量死鎖
+    let currentEstSmall = parseInt(res.estSmallTotal) || (totalSmallPcsFromCloud + smallPcs);
+    if (currentEstSmall > config.qty) {
+        alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${currentEstSmall} 張) \n小張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
         return; 
     }
 
