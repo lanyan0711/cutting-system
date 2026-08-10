@@ -563,6 +563,42 @@ function forceNextRoll() {
     calculateProgress(); // 讓藍色看板的分子秒變回 0.00
     validateForm();      // 💡 因為原紙編號被清空了，按鈕會自動非常聰明地重新鎖死變回「灰色」，強迫作業員下一卷上機前，必須「再掃描一次新的玻纖紙號碼」！
 }
+// ──────────────────────────────────────────────────────────────
+        // 🔒 【大師級防偷看外掛】：禁用右鍵、禁用F12、開控制台直接死鎖當機
+        // ──────────────────────────────────────────────────────────────
+        
+        // 1. 🛑 徹底禁用滑鼠右鍵
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            alert("⚠️ 系統安全保護：本網頁已啟用商用安全鎖，禁用滑鼠右鍵！");
+        });
+
+        // 2. 🛑 徹底禁用鍵盤工程師快捷鍵 (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U偷看原始碼)
+        document.addEventListener('keydown', function(e) {
+            if (
+                e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+                (e.ctrlKey && e.key === 'u') ||
+                (e.ctrlKey && e.key === 's') // 防止按 Ctrl+S 網頁另存新檔
+            ) {
+                e.preventDefault();
+                alert("🔒 安全性警告：本系統內嵌商業智慧財產權，已硬性封鎖開發者工具！");
+                return false;
+            }
+        });
+
+        // 3. 💣 【核心大絕招：Debugger 記憶體炸彈】
+        // 只要有人用偏門方法（例如從瀏覽器選單）強行打開控制台，網頁會在一秒內無限死循環當機，讓他什麼都看不到！
+        setInterval(function() {
+            var startTime = performance.now();
+            debugger; // 💡 如果控制台是打開的，程式會死死卡在這裡
+            var endTime = performance.now();
+            if (endTime - startTime > 100) {
+                // 偵測到使用者強行暫停程式企圖破解，直接強迫網頁無限重整或顯示空白！
+                document.body.innerHTML = '<h1 style="text-align:center; margin-top:20%; color:red;">❌ 偵測到非法外力介入，系統已安全啟動防禦封鎖！</h1>';
+                window.location.reload();
+            }
+        }, 500);
 </script>
 </body>
 </html>
