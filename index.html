@@ -404,13 +404,13 @@ function submitRollToCloud() {
         return; 
     }
 
-    if(res.estLargeTotal > config.qty)
+    if(res.estLargeTotal > config.qty || largePcs > config.qty)
     {
         alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estLargeTotal.toFixed(2)} 張) \n大張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
         return; 
     }
 
-    if(res.estSmallTotal > config.qty)
+    if(res.estSmallTotal > config.qty || smallPcs > config.qty)
     {
         alert(`❌ 產線硬性封鎖警告！\n\n此筆資料包含歷史總消耗 (${res.estSmallTotal.toFixed(2)} 張) \n小張-已經裁切超過此工單的設定張數 (${config.qty} 張)！\n\n系統已強制攔截，不允許上傳。請產線核對張數！`);
         return; 
