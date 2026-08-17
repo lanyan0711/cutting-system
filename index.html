@@ -44,6 +44,22 @@
         .btn-close-camera { margin-top: 15px; font-size: 16px; padding: 8px 25px; background: #dc3545; color: white; border: none; border-radius: 5px; }
         
         .sync-status { text-align: center; font-size: 14px; color: #007bff; font-weight: bold; margin-top: 5px; }
+
+        /* 🌀 智慧製造高級轉圈圈動畫 (終極鋼鐵防觸控完全體) */
+        .loading-spinner {
+            display: none; /* 預設隱藏 */
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.85); /* 半透明白底，徹底遮住後方畫面 */
+            z-index: 99999; /* 🌟 確保這層永遠站在全宇宙最上層，把所有按鈕死死壓在底下 */
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            
+            /* 🌟 【破案核心大絕招】：強迫這層吃下所有手機觸控訊號，後方所有按鈕100%完全失效！ */
+            pointer-events: auto; 
+        }
     </style>
 </head>
 <body>
@@ -58,6 +74,11 @@
                 <input type="text" id="emp-id" placeholder="請輸入您的工號" onchange="validateForm()">
             </div>
         </div>
+    </div>
+
+    <div id="loading-layer" class="loading-spinner">
+    <div class="spinner"></div>
+    <p style="margin-top: 15px; font-weight: bold; color: #007bff; font-size: 18px;">⚡ 雲端大數據極速對帳中，請稍候...</p>
     </div>
 
     <div class="card" style="background: #e9ecef; border: 2px solid #6c757d;">
@@ -83,9 +104,8 @@
                 <input type="number" id="input-spec-s" value="10" step="0.1" oninput="calculateProgress()" readonly style="font-size: 16px; padding: 6px; text-align:center; border: 2px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; background-color: #e9ecef; color: #495057;">
             </div>
 
-            <!-- 🛠️ 權限解鎖按鈕 -->
-            <button type="button" id="btn-override-spec" onclick="toggleManualSize()" style="margin-bottom: 15px; width: 100%; padding: 8px; font-weight: bold; background-color: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">⚙️ 臨時換手裁：點此解鎖尺寸修改</button>
-                    </div>
+            <!-- 🛠️ 權限解鎖按鈕：外觀尺寸、高度、字體100%完美對齊上方藍色按鈕 -->
+            <button type="button" id="btn-override-spec" onclick="toggleManualSize()" style="margin-bottom: 15px; width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background-color: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; gap: 8px;">⚙️ 臨時換手裁：點此解鎖尺寸修改</button>
     </div>
 
     <div class="card" style="background: #fff8e1; border: 2px solid #ffb300;">
