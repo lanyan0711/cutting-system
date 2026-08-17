@@ -60,6 +60,15 @@
             /* 🌟 【破案核心大絕招】：強迫這層吃下所有手機觸控訊號，後方所有按鈕100%完全失效！ */
             pointer-events: auto; 
         }
+        .spinner {
+            width: 60px; height: 60px;
+            border: 6px solid #f3f3f3; border-top: 6px solid #007bff; /* 藍色科技感線條 */
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -247,7 +256,7 @@ function onScanSuccess(decodedText) {
                 document.getElementById("lbl-show-order").innerText = config.targetOrder;
                 document.getElementById("lbl-show-largePcs").innerText = config.qty;
                 document.getElementById("lbl-show-smallPcs").innerText = config.qty;
-                document.getElementById("loading-layer").style.display = "flex";
+               
                 
                 closeCamera();
 
@@ -258,7 +267,9 @@ function onScanSuccess(decodedText) {
                             validateForm();
                             return; // 💡 轉身離開，100% 杜絕空白網址發射！
                         }
-                
+                // 🌟 【動態開始】:一嗶完工單，還沒fetch前，立刻強制轉圈圈動畫登場！
+                document.getElementById("loading-layer").style.display = "flex";
+
                 syncMsg.style.display = "block";
                 syncMsg.style.color = "#007bff"; // 預設連線查詢藍色
                 syncMsg.innerText = "🔍 正在向雲端查詢工單歷史累積進度...";
@@ -272,16 +283,20 @@ function onScanSuccess(decodedText) {
                     totalSmallPcsFromCloud = parseInt(data.totalSmallPcs) || 0;
                     
                     calculateProgress();
+
+                    document.getElementById("loading-layer").style.display="none";
                     
                     // 🌟 核心防錯：工單連線成功時，強制換成綠色字體！
                     syncMsg.style.color = "#28a745";
                     syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
-                    document.getElementById("loading-layer").style.display="none";
+                    
                     
                     validateForm(); // 雲端回傳成功後，才檢查按鈕解鎖
                 })
                 .catch(err => { 
                     console.error(err);
+                    //🌟 【動態異常安全鎖】:就算網路抽風失敗了，也要把轉圈圈關掉，才不會卡死畫面
+                    document.getElementById("loading-layer").style.display="none";
                     alert("工單讀取異常: " + err);
                     syncMsg.style.color = "#ff9800"; // 斷線或異常時，亮起橘黃色警告
                     syncMsg.innerText = "⚠️ 雲端讀取失敗，進度將由 0 開始。"; 
