@@ -71,9 +71,21 @@
             <div>品號：<span id="lbl-item" style="font-weight:bold; color:#007bff;">--</span></div>
             <div>數量：<span id="lbl-qty" style="font-weight:bold;">--</span></div>
             <div>工單用量：<span id="lbl-tgt-order" style="font-weight:bold; color:#dc3545;">0</span> cm</div>
-            <div>大張規格(長度)：<span id="lbl-spec-l" style="font-weight:bold;">0.00</span> cm</div>
-            <div>小張規格(長度)：<span id="lbl-spec-s" style="font-weight:bold;">0.00</span> cm</div>
-        </div>
+            <!-- 📐 大張尺寸輸入框（預設唯讀灰色） -->
+            <div class="input-box" style="margin-bottom: 10px;">
+                <label style="font-weight: bold; color: #555;">📐 當前【大張】裁切尺寸 (cm) ：</label>
+                <input type="number" id="input-spec-l" value="45" step="0.1" oninput="calculateProgress()" readonly style="font-size: 16px; padding: 6px; text-align:center; border: 2px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; background-color: #e9ecef; color: #495057;">
+            </div>
+
+            <!-- 📐 小張尺寸輸入框（預設唯讀灰色） -->
+            <div class="input-box" style="margin-bottom: 10px;">
+                <label style="font-weight: bold; color: #555;">📐 當前【小張】裁切尺寸 (cm) ：</label>
+                <input type="number" id="input-spec-s" value="10" step="0.1" oninput="calculateProgress()" readonly style="font-size: 16px; padding: 6px; text-align:center; border: 2px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; background-color: #e9ecef; color: #495057;">
+            </div>
+
+            <!-- 🛠️ 權限解鎖按鈕 -->
+            <button type="button" id="btn-override-spec" onclick="toggleManualSize()" style="margin-bottom: 15px; width: 100%; padding: 8px; font-weight: bold; background-color: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">⚙️ 臨時換手裁：點此解鎖尺寸修改</button>
+                    </div>
     </div>
 
     <div class="card" style="background: #fff8e1; border: 2px solid #ffb300;">
@@ -208,8 +220,10 @@ function onScanSuccess(decodedText) {
                 document.getElementById("lbl-item").innerText = config.item;
                 document.getElementById("lbl-qty").innerText = config.qty;
                 document.getElementById("lbl-tgt-order").innerText = config.targetOrder;
-                document.getElementById("lbl-spec-l").innerText = config.largeCm;
-                document.getElementById("lbl-spec-s").innerText = config.smallCm;
+                //document.getElementById("lbl-spec-l").innerText = config.largeCm;
+                //document.getElementById("lbl-spec-s").innerText = config.smallCm;
+                document.getElementById("input-spec-l").value = config.largeCm;
+                document.getElementById("input-spec-s").value = config.smallCm;
                 document.getElementById("lbl-show-order").innerText = config.targetOrder;
                 document.getElementById("lbl-show-largePcs").innerText = config.qty;
                 document.getElementById("lbl-show-smallPcs").innerText = config.qty;
@@ -325,9 +339,17 @@ function calculateProgress() {
     config.targetRoll = rollTarget;
     document.getElementById("lbl-show-roll").innerText = rollTarget;
 
+    // 🌟 核心破案修正：強迫大腦即時去抓「目前輸入框裡的最新尺寸」，手裁時改數字看板就會連動！
+    let currentLargeCm = parseFloat(document.getElementById("input-spec-l").value) || config.largeCm;
+    let currentSmallCm = parseFloat(document.getElementById("input-spec-s").value) || config.smallCm;
+    
+    // 將大腦暫存器也同步更新，這樣下方 submitRollToCloud() 才能精準吃到最新的手裁規格
+    config.largeCm = currentLargeCm;
+    config.smallCm = currentSmallCm;
+
     // 1. 先計算「今天這台手機新切出來」的長度
-    let largeTotalCm = largePcs * config.largeCm;
-    let smallTotalCm = smallPcs * config.smallCm;
+    let largeTotalCm = largePcs * currentLargeCm;
+    let smallTotalCm = smallPcs * currentSmallCm;
     let todayNewCm = largeTotalCm + smallTotalCm + ngCm;
 
     // 🌟 2. 核心修正：將「雲端抓回來的歷史消耗 currentRollCm」與「今天新切的 todayNewCm」相加！
@@ -541,6 +563,38 @@ function resetAllOrder() {
 
     alert("✅ 工單已重置，請掃描新的工單。");
 }
+
+// 🌐 智慧尺寸鎖控制大腦：一鍵切換機裁/手裁模式
+function toggleManualSize() {
+    let inputL = document.getElementById("input-spec-l");
+    let inputS = document.getElementById("input-spec-s");
+    let btn = document.getElementById("btn-override-spec");
+    
+    // 💡 如果目前是唯讀鎖定狀態 (機器裁切模式) -> 點擊後執行「解鎖」
+    if (inputL.readOnly) {
+        inputL.readOnly = false;
+        inputS.readOnly = false;
+        inputL.style.backgroundColor = "#ffffff"; // 變回白色允許打字
+        inputS.style.backgroundColor = "#ffffff";
+        btn.innerText = "🔒 鎖定尺寸 (變回自動掃描模式)";
+        btn.style.backgroundColor = "#dc3545"; // 按鈕變紅色提示
+        alert("🔓 尺寸已解除鎖定！\n現在您可以手動修改手裁的真實尺寸。");
+    } else {
+        // 💡 如果目前是開放狀態 -> 點擊後「重新鎖死」
+        inputL.readOnly = true;
+        inputS.readOnly = true;
+        inputL.style.backgroundColor = "#e9ecef"; // 變回灰色唯讀
+        inputS.style.backgroundColor = "#e9ecef";
+        btn.innerText = "⚙️ 臨時換手裁：點此解鎖尺寸修改";
+        btn.style.backgroundColor = "#6c757d"; // 按鈕變回灰色
+        
+        // 自動復原為這張工單當初掃描解出來的預設原廠尺寸
+        inputL.value = config.largeCm;
+        inputS.value = config.smallCm;
+        calculateProgress(); // 重新刷新進度
+    }
+}
+
 // 🌀 換下一卷原紙程序：當舊原紙真正切完、換新的一卷上機時手動點擊
 function forceNextRoll() {
 
@@ -555,6 +609,13 @@ function forceNextRoll() {
     document.getElementById("input-small-pcs").value = "0";
     document.getElementById("input-ng-cm").value = "0";
     document.getElementById("input-roll-target").value = "0";
+    // 🌟 在 forceNextRoll() 內部補上這兩行，換新紙時強制鎖回自動機裁模式
+    document.getElementById("input-spec-l").readOnly = true;
+    document.getElementById("input-spec-s").readOnly = true;
+    document.getElementById("input-spec-l").style.backgroundColor = "#e9ecef";
+    document.getElementById("input-spec-s").style.backgroundColor = "#e9ecef";
+    document.getElementById("btn-override-spec").innerText = "⚙️ 臨時換手裁：點此解鎖尺寸修改";
+    document.getElementById("btn-override-spec").style.backgroundColor = "#6c757d";
     
     // 4. 🌟 關鍵記憶重置：把這卷紙歷史上累積的總公分數也歸零，好讓全新一卷從 0.00 cm 開始重新比對！
     currentRollCm = 0.0;
