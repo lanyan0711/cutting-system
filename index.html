@@ -247,6 +247,7 @@ function onScanSuccess(decodedText) {
                 document.getElementById("lbl-show-order").innerText = config.targetOrder;
                 document.getElementById("lbl-show-largePcs").innerText = config.qty;
                 document.getElementById("lbl-show-smallPcs").innerText = config.qty;
+                document.getElementById("loading-layer").style.display = "flex";
                 
                 closeCamera();
 
@@ -275,6 +276,7 @@ function onScanSuccess(decodedText) {
                     // 🌟 核心防錯：工單連線成功時，強制換成綠色字體！
                     syncMsg.style.color = "#28a745";
                     syncMsg.innerText = `🟢 工單連線成功！歷史良品已累積：${totalOrderCmFromCloud.toFixed(2)} cm`;
+                    document.getElementById("loading-layer").style.display="none";
                     
                     validateForm(); // 雲端回傳成功後，才檢查按鈕解鎖
                 })
